@@ -1,0 +1,6 @@
+{
+  "name": "SinkLab.PlayModeTests",
+  "references": ["SinkLab.Runtime", "Unity.InputSystem"],
+  "optionalUnityReferences": ["TestAssemblies"],
+  "autoReferenced": false
+}

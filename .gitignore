@@ -1,0 +1,50 @@
+# Unity regenerates these local folders when the project is opened.
+/[Ll]ibrary/
+/[Tt]emp/
+/[Oo]bj/
+/[Bb]uild/
+/[Bb]uilds/
+/[Ll]ogs/
+/[Uu]ser[Ss]ettings/
+/[Mm]emoryCaptures/
+/[Rr]ecordings/
+
+# Local IDE files and generated solution/project files.
+/.vs/
+/.idea/
+/.vscode/
+/*.csproj
+/*.sln
+/*.slnx
+/*.suo
+/*.user
+/*.userprefs
+/*.pidb
+/*.booproj
+/*.svd
+/*.opendb
+/*.VC.db
+/sysinfo.txt
+/crashlytics-build.properties
+
+# Unity recovery folders.
+/Assets/_Recovery/
+/Assets/_Recovery.meta
+/Assets/__Backupscenes/
+/Assets/__Backupscenes.meta
+
+# Reinstallable development dependencies and machine-local configuration.
+node_modules/
+.pnpm-store/
+/.codex/
+.env
+.env.*
+!.env.example
+*.keystore
+*.jks
+
+# Operating system files.
+.DS_Store
+._*
+Thumbs.db
+Desktop.ini

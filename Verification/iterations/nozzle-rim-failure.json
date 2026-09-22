@@ -1,0 +1,11 @@
+{
+    "finished": true,
+    "passed": false,
+    "status": "Unreachable stain: Stain 1",
+    "foodRemaining": 8,
+    "stainsRemaining": 6,
+    "seconds": 17.819992065429689,
+    "observations": [
+        "Stain 1: FAILED, remaining 1"
+    ]
+}

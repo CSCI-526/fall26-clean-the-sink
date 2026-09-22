@@ -1,0 +1,6 @@
+{
+ "name": "SinkLab.Editor",
+ "references": ["SinkLab.Runtime", "UnityEngine.TestRunner", "UnityEditor.TestRunner"],
+ "includePlatforms": ["Editor"],
+ "autoReferenced": true
+}

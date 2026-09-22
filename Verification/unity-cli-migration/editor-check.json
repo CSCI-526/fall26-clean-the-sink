@@ -1,0 +1,30 @@
+{
+  "success": true,
+  "command": "command eval",
+  "data": {
+    "command": "eval",
+    "parameters": {
+      "code": "var scene=UnityEngine.SceneManagement.SceneManager.GetActiveScene(); return new { unityVersion=UnityEngine.Application.unityVersion, scenePath=scene.path, sceneLoaded=scene.isLoaded, rootObjects=scene.rootCount, compilationFailed=UnityEditor.EditorUtility.scriptCompilationFailed };"
+    },
+    "result": {
+      "output": null,
+      "diagnostics": [],
+      "success": true,
+      "result": {
+        "unityVersion": "6000.3.22f1",
+        "scenePath": "Assets/SinkLab/Scenes/SinkLab.unity",
+        "sceneLoaded": true,
+        "rootObjects": 1,
+        "compilationFailed": false
+      }
+    },
+    "target": {
+      "host": "127.0.0.1",
+      "port": 7800,
+      "projectPath": "/Users/lilyxu/Desktop/water gun experiment project"
+    },
+    "success": true
+  },
+  "errors": [],
+  "warnings": []
+}

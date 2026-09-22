@@ -1,0 +1,5 @@
+{
+  "name": "SinkLab.Runtime",
+  "references": ["Unity.InputSystem"],
+  "autoReferenced": true
+}

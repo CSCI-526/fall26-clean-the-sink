@@ -1,0 +1,17 @@
+{
+    "finished": true,
+    "passed": false,
+    "status": "Could not guide Food scrap 1 to drain",
+    "foodRemaining": 8,
+    "stainsRemaining": 0,
+    "seconds": 122.29995727539063,
+    "observations": [
+        "Stain 1: washed",
+        "Stain 2: washed",
+        "Stain 3: washed",
+        "Stain 4: washed",
+        "Stain 5: washed",
+        "Stain 6: washed",
+        "Food scrap 1: FAILED at (-1.100, 0.845, -0.670)"
+    ]
+}
