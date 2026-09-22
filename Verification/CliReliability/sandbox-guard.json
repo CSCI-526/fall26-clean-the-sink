@@ -1,0 +1,6 @@
+{
+  "wrapper_exit_code": 77,
+  "refused_before_cli": true,
+  "descriptor_preserved": true,
+  "message": "Unity CLI was not started: host process listing is unavailable.\nRestricted process inspection can make Unity CLI mistake a live Editor for a dead process and delete its discovery file.\nRun ./Tools/unity with sandbox_permissions=require_escalated for host process inspection and local Editor access. Do not retry the raw unity command in the sandbox."
+}

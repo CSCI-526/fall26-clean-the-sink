@@ -1,0 +1,25 @@
+{
+  "success": true,
+  "command": "command eval",
+  "data": {
+    "command": "eval",
+    "parameters": {
+      "code": "UnityEditor.EditorApplication.delayCall += () => UnityEditor.EditorUtility.RequestScriptReload(); return \"Script domain reload scheduled\";",
+      "format": "json"
+    },
+    "result": {
+      "output": null,
+      "diagnostics": [],
+      "success": true,
+      "result": "Script domain reload scheduled"
+    },
+    "target": {
+      "host": "127.0.0.1",
+      "port": 7800,
+      "projectPath": "/Users/lilyxu/Desktop/water gun experiment project"
+    },
+    "success": true
+  },
+  "errors": [],
+  "warnings": []
+}

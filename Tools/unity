@@ -1,0 +1,84 @@
+#!/usr/bin/env python3
+"""Run Unity CLI only where host process discovery is available."""
+
+import errno
+import os
+from pathlib import Path
+import shutil
+import subprocess
+import sys
+
+
+def refuse(reason):
+    print(
+        "Unity CLI was not started: " + reason + "\n"
+        "Restricted process inspection can make Unity CLI mistake a live Editor for a "
+        "dead process and delete its discovery file.\n"
+        "Run ./Tools/unity with sandbox_permissions=require_escalated for host process "
+        "inspection and local Editor access. Do not retry the raw unity command in the sandbox.",
+        file=sys.stderr,
+    )
+    return 77
+
+
+def preflight():
+    # No descriptor or authentication token is read. Inspect only this user's process
+    # IDs and executable names, using the same host facilities CLI discovery needs.
+    try:
+        result = subprocess.run(
+            ["/bin/ps", "-ww", "-U", str(os.getuid()), "-o", "pid=,comm="],
+            capture_output=True,
+            text=True,
+            timeout=5,
+            check=False,
+        )
+    except (OSError, subprocess.TimeoutExpired):
+        return "host process listing is unavailable."
+
+    if result.returncode != 0:
+        return "host process listing is blocked or failed."
+
+    for line in result.stdout.splitlines():
+        fields = line.strip().split(None, 1)
+        if len(fields) != 2 or not fields[0].isdigit():
+            continue
+        pid, executable = int(fields[0]), fields[1]
+        if Path(executable).name != "Unity":
+            continue
+        try:
+            # Signal zero checks visibility/permission without sending a signal.
+            os.kill(pid, 0)
+        except OSError as error:
+            if error.errno == errno.ESRCH:
+                continue  # The Editor exited after the process snapshot.
+            return "the running Unity Editor cannot be inspected."
+    return None
+
+
+def unity_executable():
+    wrapper = Path(__file__).resolve()
+    # Skip this wrapper if Tools itself is on PATH, preventing accidental recursion.
+    for directory in os.get_exec_path():
+        candidate = shutil.which("unity", path=directory)
+        if candidate and Path(candidate).resolve() != wrapper:
+            return candidate
+    candidate = Path.home() / ".unity" / "bin" / "unity"
+    if candidate.is_file() and os.access(candidate, os.X_OK) and candidate.resolve() != wrapper:
+        return str(candidate)
+    return None
+
+
+def main():
+    reason = preflight()
+    if reason:
+        return refuse(reason)
+    executable = unity_executable()
+    if executable is None:
+        print("Unity CLI was not found on PATH or in ~/.unity/bin/unity.", file=sys.stderr)
+        return 127
+    # Replace this process: argument boundaries, exit status, and signals stay intact.
+    os.execv(executable, [executable, *sys.argv[1:]])
+
+
+if __name__ == "__main__":
+    sys.exit(main())

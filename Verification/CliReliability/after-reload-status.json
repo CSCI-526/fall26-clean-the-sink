@@ -1,0 +1,18 @@
+{
+  "success": true,
+  "command": "status",
+  "data": {
+    "count": 1,
+    "instances": [
+      {
+        "port": 7800,
+        "project": "/Users/lilyxu/Desktop/water gun experiment project",
+        "version": "6000.3.22f1",
+        "pid": 732,
+        "state": "ready"
+      }
+    ]
+  },
+  "errors": [],
+  "warnings": []
+}
