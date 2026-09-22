@@ -89,6 +89,18 @@ Unity Test Runner assemblies:
 
 The latest executed results and captures live in `Verification`.
 
+## Agent commissions
+
+Start future agent work with [the project harness](Docs/Harness/README.md). Root
+[AGENTS.md](AGENTS.md) supplies the mandatory rules; the harness organizes the
+experience contract, prefab authoring standards, CLI recovery, verification by
+change scope, past failure lessons, and a reusable commission brief.
+
+Use `./Tools/harness check --json` for offline integrity checks and
+`./Tools/harness preflight --json` for live Editor readiness (host access required
+in Codex). Neither command changes the game or substitutes for the selected
+commission's gameplay/visual checks.
+
 ## Unity CLI
 
 Install the [official Unity CLI](https://docs.unity.com/en-us/unity-cli/use-unity-cli) once per computer; the same installation works across projects and Editor versions. Controlling a running Editor requires Unity 6.0 LTS or later and the Unity Pipeline package (`com.unity.pipeline`) in each project. This project's `Packages/manifest.json` already includes Pipeline.

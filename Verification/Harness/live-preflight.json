@@ -1,0 +1,7 @@
+{
+  "success": true,
+  "command": "preflight",
+  "exitCode": 0,
+  "scope": "Read-only Editor readiness at this instant; no scene or asset edits.",
+  "failures": []
+}
