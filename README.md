@@ -29,13 +29,15 @@ Use separate branches for changes and pull requests to review them. Coordinate e
 | Hold left mouse | Spray water |
 | Q or right mouse | Switch focused jet / wide shower |
 | 1 / 2 | Select jet / shower |
-| Mouse wheel | Adjust pressure |
-| R | Restore the dirty sink and starting position |
+| E | Close or open the drain. Closed, the sink holds water. Open, that water pulls food in |
+| Mouse wheel | Raise or lower jet pressure. Higher pressure pushes harder and fills the sink faster |
+| Release spray | Let the water level drop. A smaller drain empties much more slowly |
+| R | Restore the dirty sink, the drain, the water level, and the starting position |
 | Escape | Release the mouse and stop spraying |
 
-Aim just behind a scrap to guide it with the spreading water. Direct hits push in the stream's direction. Walk around the island to approach stubborn food from another angle. The focused jet is stronger; the wide shower covers more of a stain. Lower pressure helps near the drain.
+Spray a scrap and the water pushes it away from you, then steers it toward the drain as it gets close. Walk around the island to approach stubborn food from another angle. The focused jet is stronger; the wide shower covers more of a stain. Higher pressure clears debris faster, but it also pumps water into the basin. Let go of the spray and wait for the level to fall before continuing. Drainage gets worse as the hole shrinks over time and each time a scrap is swallowed, so clear the large cubes before the opening chokes them. If the water rises over the rim, the sink overflows and the run is over.
 
-The sink is finished only when all eight physical scraps enter the actual drain opening and all six stains wash away. There is no grabbing, timer, scoring or progression system.
+The sink is finished only when all eight physical scraps enter the actual drain opening and all six stains wash away, without the basin overflowing. There is no grabbing, timer, or scoring system.
 
 ## How it works
 

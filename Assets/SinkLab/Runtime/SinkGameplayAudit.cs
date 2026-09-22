@@ -39,6 +39,8 @@ namespace SinkLab.Editor
                     world.water.WideSpray=true;float began=Time.time,deadline=Time.time+9;float previous=stain.Remaining;
                     while(!stain.IsClean&&Time.time<deadline)
                     {
+                        float mark=Time.time;yield return DrainPause();if(result.finished)yield break;
+                        float waited=Time.time-mark;deadline+=waited;began+=waited;
                         Aim(stain.transform.position);world.water.SetSpraying(true);yield return new WaitForFixedUpdate();
                         if(Time.time-began>2&&Mathf.Abs(stain.Remaining-previous)<.001f)break;
                     }
@@ -62,6 +64,8 @@ namespace SinkLab.Editor
                 {
                     Vector3 position=food.Body.position;
                     if(position.y<.64f){yield return new WaitForFixedUpdate();continue;}
+                    float mark=Time.time;yield return DrainPause();if(result.finished)yield break;
+                    float waited=Time.time-mark;deadline+=waited;lastProgress+=waited;
                     Vector3 delta=world.drain.transform.position-position;delta.y=0;
                     Vector3 velocity=food.Body.linearVelocity;velocity.y=0;
                     Vector3 desired=(delta.normalized-velocity*.65f).normalized;
@@ -101,17 +105,16 @@ namespace SinkLab.Editor
                 Vector3 origin=world.water.nozzle.position,travel=eyeHit.point-origin;
                 if(!Physics.Raycast(origin,travel.normalized,out hit,travel.magnitude+.035f,world.water.waterMask,QueryTriggerInteraction.Ignore))continue;
                 var direct=hit.collider.GetComponentInParent<FoodScrap>();
-                Vector3 along=Vector3.ProjectOnPlane(travel,Vector3.up).normalized;
                 Vector3 push;float coverage=1;
-                if(direct==food)push=along;
+                if(direct==food)push=world.water.GuidePush(travel,food.Body.position-hit.point,food.Body.position,true);
                 else
                 {
                     if(direct||hit.normal.y<.65f)continue;
                     float radius=mode==0?world.water.focusedRadius:world.water.sprayRadius;
                     float distance=Vector3.Distance(food.ClosestPoint(hit.point),hit.point);
                     if(distance>radius)continue;
-                    Vector3 radial=Vector3.ProjectOnPlane(food.Body.position-hit.point,Vector3.up).normalized;
-                    push=(radial*.84f+along*.16f).normalized;coverage=Mathf.Lerp(.28f,1,1-distance/radius);
+                    push=world.water.GuidePush(travel,food.Body.position-hit.point,food.Body.position,false);
+                    coverage=Mathf.Lerp(.28f,1,1-distance/radius);
                 }
                 float score=Vector3.Dot(push,desired)*coverage*(mode==0?1:.8f);
                 if(score>best){best=score;bestPoint=candidate;bestWide=mode==1;}
@@ -143,6 +146,17 @@ namespace SinkLab.Editor
             float yaw=Mathf.Atan2(direction.x,direction.z)*Mathf.Rad2Deg;
             float pitch=Mathf.Atan2(-direction.y,new Vector2(direction.x,direction.z).magnitude)*Mathf.Rad2Deg;
             world.player.SetView(yaw,pitch);
+        }
+        IEnumerator DrainPause()
+        {
+            BasinWater basin=world!=null?world.basin:null;
+            if(basin==null||basin.NormalizedLevel<.68f)yield break;
+            if(basin.IsOverflowed){if(!result.finished)Finish(false,"The sink overflowed");yield break;}
+            world.water.SetSpraying(false);
+            float until=Time.time+22f;
+            while(!basin.IsOverflowed&&basin.NormalizedLevel>.3f&&Time.time<until)
+                yield return new WaitForFixedUpdate();
+            if(basin.IsOverflowed&&!result.finished)Finish(false,"The sink overflowed");
         }
         void Finish(bool passed,string message)
         {

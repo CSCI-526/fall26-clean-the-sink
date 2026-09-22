@@ -6,6 +6,8 @@ namespace SinkLab
         public WaterJet water;
         public Transform hoseAnchor;
         public Material waterMaterial,hoseMaterial;
+        [Header("Drawn thickness. Stream 0 is the focused jet. Streams 1-6 appear only in wide spray.")]
+        public float focusedStartWidth=.034f,focusedEndWidth=.05f,wideStartWidth=.016f,wideEndWidth=.028f;
         LineRenderer[] streams;
         LineRenderer hose;
         ParticleSystem splash;
@@ -41,7 +43,8 @@ namespace SinkLab
             {
                 var l=streams[i];l.enabled=water.IsSpraying&&(i==0||water.WideSpray);if(!l.enabled)continue;
                 float a=i*Mathf.PI*2/6;var spread=i==0?Vector3.zero:(side*Mathf.Cos(a)+up*Mathf.Sin(a))*water.EffectiveRadius*.65f;
-                l.startWidth=water.WideSpray?.009f:.019f;l.endWidth=water.WideSpray?.019f:.029f;
+                float punch=Mathf.Lerp(.7f,1.45f,water.Pressure);
+                l.startWidth=(water.WideSpray?wideStartWidth:focusedStartWidth)*punch;l.endWidth=(water.WideSpray?wideEndWidth:focusedEndWidth)*punch;
                 l.SetPosition(0,from);l.SetPosition(1,Vector3.Lerp(from,to+spread,.5f)+side*Mathf.Sin(Time.time*38+i)*.006f);l.SetPosition(2,to+spread);
             }
             hose.enabled=hoseAnchor!=null;

@@ -12,6 +12,7 @@ namespace SinkLab
         public SinkPlayer player;
         public Drain drain;
         public SinkAssembly sink;
+        public BasinWater basin;
 
         public int FoodRemaining
         {
@@ -37,12 +38,22 @@ namespace SinkLab
             }
         }
 
+        public bool IsOverflowed => basin != null && basin.IsOverflowed;
+
         // Missing required parts or deleted objective references must not award completion.
         public bool IsComplete => player != null && water != null && drain != null &&
             foods != null && foods.Length > 0 && stains != null && stains.Length > 0 &&
-            FoodRemaining == 0 && StainsRemaining == 0;
+            FoodRemaining == 0 && StainsRemaining == 0 && !IsOverflowed;
 
-        void Awake() => RefreshLevelReferences();
+        void Awake()
+        {
+            RefreshLevelReferences();
+            if (!Application.isPlaying) return;
+            if (basin == null) basin = GetComponent<BasinWater>();
+            if (basin == null) basin = gameObject.AddComponent<BasinWater>();
+            basin.Configure(this);
+            if (sink != null) BasinRounding.Apply(sink);
+        }
 
         /// <summary>
         /// Rebinds reusable child prefabs and includes newly placed or inactive mess.
@@ -93,6 +104,7 @@ namespace SinkLab
                 foreach (StainPatch stain in stains)
                     if (stain != null) stain.ResetStain();
             if (drain != null) drain.ResetCount();
+            if (basin != null) basin.ResetWater();
             if (player != null) player.ResetPlayer();
             Physics.SyncTransforms();
         }

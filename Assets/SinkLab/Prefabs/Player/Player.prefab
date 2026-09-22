@@ -340,7 +340,7 @@ MonoBehaviour:
     serializedVersion: 2
     m_Bits: 51
   maxDistance: 8
-  focusedRadius: 0.13
+  focusedRadius: 0.26
   sprayRadius: 0.34
   waterForce: 0.2
   cleaningRate: 0.48

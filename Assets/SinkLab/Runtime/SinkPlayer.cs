@@ -89,7 +89,8 @@ namespace SinkLab
                         water.Pressure = Mathf.Clamp01(water.Pressure + Mathf.Sign(scroll) * 0.1f);
                     if (mouse.rightButton.wasPressedThisFrame)
                         water.WideSpray = !water.WideSpray;
-                    water.SetSpraying(mouse.leftButton.isPressed && !_mustReleaseFire);
+                    bool canSpray = !_mustReleaseFire && (world == null || !world.IsOverflowed);
+                    water.SetSpraying(mouse.leftButton.isPressed && canSpray);
                 }
             }
             else StopWater();
@@ -99,6 +100,8 @@ namespace SinkLab
             {
                 movement.x = (keys.dKey.isPressed ? 1f : 0f) - (keys.aKey.isPressed ? 1f : 0f);
                 movement.y = (keys.wKey.isPressed ? 1f : 0f) - (keys.sKey.isPressed ? 1f : 0f);
+                if (world != null && world.drain != null && keys.eKey.wasPressedThisFrame)
+                    world.drain.ToggleOpen();
                 if (water != null)
                 {
                     if (keys.qKey.wasPressedThisFrame) water.WideSpray = !water.WideSpray;
