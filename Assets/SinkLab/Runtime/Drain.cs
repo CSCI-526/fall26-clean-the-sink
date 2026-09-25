@@ -8,15 +8,17 @@ namespace SinkLab
         public Transform drainCenter;
         public float radius = .22f;
         public bool squareOpening;
-        [Min(0.01f)] public float minRadius = 0.12f;
-        [Min(0f)] public float shrinkPerSecond = 0.0011f;
-        [Min(0f)] public float shrinkPerScrap = 0.012f;
+        [Min(0.01f)] public float minRadius = 0.04f;
+        [Min(0f)] public float shrinkPerSecond = 0.0005f;
+        [Min(0f)] public float shrinkPerScrap = 0.006f;
         [Min(0f)]
         [Tooltip("Distance below the drain opening, in its local frame, that food must cross before collection. Moves and rotates with this sink.")]
         public float captureDepth = .07f;
         public float captureHeight => CaptureFrame.TransformPoint(new Vector3(0f, -captureDepth, 0f)).y;
         public int DrainedCount { get; private set; }
         public bool IsOpen { get; private set; } = true;
+        public bool IsSealed { get; private set; }
+        public bool HasFullOpenCharge { get; private set; } = true;
         public float StartRadius => originReady ? startRadius : radius;
 
         Transform CaptureFrame => drainCenter != null ? drainCenter : transform;
@@ -32,6 +34,8 @@ namespace SinkLab
         Material plugMaterial;
         readonly System.Collections.Generic.List<Mesh> segmentMeshes = new System.Collections.Generic.List<Mesh>();
         float builtRadius = -1f;
+        bool fastShrink;
+        float fastShrinkTarget;
 
         void Awake()
         {
@@ -46,8 +50,17 @@ namespace SinkLab
 
         void FixedUpdate()
         {
-            if (originReady && Application.isPlaying)
-                radius = Mathf.Max(minRadius, radius - shrinkPerSecond * Time.fixedDeltaTime);
+            if (originReady && Application.isPlaying && !IsSealed)
+            {
+                float rate = shrinkPerSecond * (fastShrink ? 30f : 1f);
+                radius = Mathf.Max(minRadius, radius - rate * Time.fixedDeltaTime);
+                if (fastShrink && radius <= fastShrinkTarget)
+                {
+                    radius = Mathf.Max(minRadius, fastShrinkTarget);
+                    fastShrink = false;
+                }
+                if (radius <= minRadius + 0.0001f) Seal();
+            }
             UpdateCollar();
             foreach (FoodScrap food in FoodScrap.Active) TryConsume(food);
         }
@@ -60,9 +73,36 @@ namespace SinkLab
 
         public void ToggleOpen() => SetOpen(!IsOpen);
 
+        /// <summary>One use per run. Snaps the opening back to its largest size and leaves it unplugged.</summary>
+        public bool TryOpenFully()
+        {
+            if (!HasFullOpenCharge) return false;
+            HasFullOpenCharge = false;
+            fastShrinkTarget = radius;
+            fastShrink = true;
+            IsSealed = false;
+            IsOpen = true;
+            radius = originReady ? startRadius : Mathf.Max(radius, minRadius);
+            if (radius <= fastShrinkTarget) fastShrink = false;
+            UpdateCollar();
+            ApplyPlug();
+            return true;
+        }
+
+        void Seal()
+        {
+            if (IsSealed) return;
+            IsSealed = true;
+            radius = minRadius;
+            SinkWorld owner = GetComponentInParent<SinkWorld>();
+            if (owner != null && owner.water != null) owner.water.SetSpraying(false);
+            UpdateCollar();
+            ApplyPlug();
+        }
+
         public bool TryConsume(FoodScrap food)
         {
-            if (!IsOpen) return false;
+            if (!IsOpen || IsSealed) return false;
             if (food == null || food.IsDrained || !food.isActiveAndEnabled || food.Body == null) return false;
             if (food.GetComponentInParent<SinkWorld>() != GetComponentInParent<SinkWorld>()) return false;
             Vector3 position = CaptureFrame.InverseTransformPoint(food.Body.worldCenterOfMass);
@@ -75,7 +115,8 @@ namespace SinkLab
             food.MarkDrained();
             DrainedCount++;
             radius = Mathf.Max(minRadius, radius - shrinkPerScrap);
-            UpdateCollar();
+            if (Application.isPlaying && radius <= minRadius + 0.0001f) Seal();
+            else UpdateCollar();
             return true;
         }
 
@@ -83,6 +124,9 @@ namespace SinkLab
         {
             DrainedCount = 0;
             IsOpen = true;
+            IsSealed = false;
+            HasFullOpenCharge = true;
+            fastShrink = false;
             if (originReady) radius = startRadius;
             UpdateCollar();
             ApplyPlug();
@@ -228,23 +272,25 @@ namespace SinkLab
                 block.transform.SetParent(collar, false);
                 MeshCollider collider = block.AddComponent<MeshCollider>();
                 collider.convex = true;
+                collider.contactOffset = 0.001f;
                 collider.sharedMesh = piece;
             }
         }
 
         static Mesh SegmentMesh(float a0, float a1, float holeRadius, float squareHalf, float thickness)
         {
-            Vector2 inner0 = new Vector2(Mathf.Cos(a0), Mathf.Sin(a0)) * holeRadius;
-            Vector2 inner1 = new Vector2(Mathf.Cos(a1), Mathf.Sin(a1)) * holeRadius;
+            float lip = Mathf.Max(0.02f, holeRadius - 0.035f);
+            Vector2 inner0 = new Vector2(Mathf.Cos(a0), Mathf.Sin(a0)) * lip;
+            Vector2 inner1 = new Vector2(Mathf.Cos(a1), Mathf.Sin(a1)) * lip;
             Vector2 outer0 = SquareEdge(a0, squareHalf);
             Vector2 outer1 = SquareEdge(a1, squareHalf);
             var mesh = new Mesh { name = "Drain collar block" };
             mesh.vertices = new[]
             {
-                new Vector3(inner0.x, 0f, inner0.y),
-                new Vector3(inner1.x, 0f, inner1.y),
-                new Vector3(outer1.x, 0f, outer1.y),
-                new Vector3(outer0.x, 0f, outer0.y),
+                new Vector3(inner0.x, -0.055f, inner0.y),
+                new Vector3(inner1.x, -0.055f, inner1.y),
+                new Vector3(outer1.x, -0.004f, outer1.y),
+                new Vector3(outer0.x, -0.004f, outer0.y),
                 new Vector3(inner0.x, -thickness, inner0.y),
                 new Vector3(inner1.x, -thickness, inner1.y),
                 new Vector3(outer1.x, -thickness, outer1.y),

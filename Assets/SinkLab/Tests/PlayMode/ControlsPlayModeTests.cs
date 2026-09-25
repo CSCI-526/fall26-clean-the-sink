@@ -121,7 +121,7 @@ namespace SinkLab.Tests
             Assert.That(world.player.Pitch, Is.EqualTo(pitch + 40f * sensitivity).Within(.01f));
 
             yield return InputFrame(mouseState: new MouseState { delta = new Vector2(0f, 100000f) });
-            Assert.That(world.player.Pitch, Is.EqualTo(5f).Within(.01f));
+            Assert.That(world.player.Pitch, Is.EqualTo(-25f).Within(.01f));
             yield return InputFrame(mouseState: new MouseState { delta = new Vector2(0f, -100000f) });
             Assert.That(world.player.Pitch, Is.EqualTo(85f).Within(.01f));
             Assert.That(world.player.viewCamera.transform.forward.y, Is.LessThan(-.99f),

@@ -20,31 +20,32 @@ Commit changes to `Assets` together with their `.meta` files, plus any changed f
 
 Use separate branches for changes and pull requests to review them. Coordinate edits to the same scene to reduce merge conflicts.
 
-## Controls
+## How to play
+
+Clear every scrap of food and every stain. **Success** appears when both are gone. **Fail** appears only when the sink is still dirty and the drain has closed completely. Water reaching the rim does not end the run. There is no grabbing, timer, or score.
+
+The basin is shallow, so a closed drain fills quickly. The hole also creeps smaller on its own, and each swallowed scrap makes it a little smaller. Walk around the counter and aim the spray. Water pushes food away from you, downstream. A dry drain does not pull. Standing water over an open hole forms a vortex.
 
 | Input | Action |
 | --- | --- |
-| Mouse | Look and aim |
-| WASD | Walk around the sink |
-| Hold left mouse | Spray water |
-| Q or right mouse | Switch focused jet / wide shower |
-| 1 / 2 | Select jet / shower |
-| E | Close or open the drain. Closed, the sink holds water. Open, that water pulls food in |
-| Mouse wheel | Raise or lower jet pressure. Higher pressure pushes harder and fills the sink faster |
-| Release spray | Let the water level drop. A smaller drain empties much more slowly |
-| R | Restore the dirty sink, the drain, the water level, and the starting position |
+| Mouse | Look and aim. Click the Game view first if the cursor is free |
+| WASD | Walk |
+| Hold left mouse | Spray |
+| Q, right mouse, 1, 2 | Switch focused jet and wide shower |
+| Mouse wheel | Pressure. Higher pressure pushes harder and fills the basin faster |
+| E | Plug or unplug the drain. Plugged, the water rises and floating food drifts into a new layout. Open, that water can pull food toward the hole |
+| F, or Use | Once per sink. The drain snaps fully open, then shrinks back to the size it had before that press at 30 times the normal speed. R restores the charge |
+| R | Reset the sink, water, drain, and the one-shot charge |
 | Escape | Release the mouse and stop spraying |
 
-Spray a scrap and the water pushes it away from you, then steers it toward the drain as it gets close. Walk around the island to approach stubborn food from another angle. The focused jet is stronger; the wide shower covers more of a stain. Higher pressure clears debris faster, but it also pumps water into the basin. Let go of the spray and wait for the level to fall before continuing. Drainage gets worse as the hole shrinks over time and each time a scrap is swallowed, so clear the large cubes before the opening chokes them. If the water rises over the rim, the sink overflows and the run is over.
-
-The sink is finished only when all eight physical scraps enter the actual drain opening and all six stains wash away, without the basin overflowing. There is no grabbing, timer, or scoring system.
+The bottom bar lists these controls. The lower-right card is the one-shot drain tool and is marked **Once**. After Play, the basin corners are rounded and the drain opening is circular. The Scene view still shows the authored square layout.
 
 ## How it works
 
 - A CharacterController provides FPS movement and prevents walking through the sink.
 - The Input System handles mouse and keyboard. Releasing focus or pressing Escape stops the water; the click used to recapture the cursor does not spray.
 - Water raycasts from the view to select the aim point, then from the nozzle to check obstruction. The surface footprint transfers impulses to rigidbodies. Particles and lines show the stream and splashes; these visuals do not secretly collect food.
-- Stains shrink progressively under exposed water. Food has mass, friction, gravity, collisions and momentum. A square drain check matches the actual square floor opening and only collects scraps below the floor.
+- Stains shrink progressively under exposed water. Food has mass, friction, gravity, collisions and momentum. During play the drain is a circle, and a scrap is collected only after its center passes below that opening.
 - The water shader and all shapes are simple procedural/default assets. Running-water audio is generated in memory.
 
 ## Prefab authoring

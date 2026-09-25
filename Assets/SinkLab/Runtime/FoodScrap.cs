@@ -63,6 +63,9 @@ namespace SinkLab
             foreach (Collider item in colliders) if (item != null) item.enabled = false;
         }
 
+        /// <summary>The scrap the audit should keep pushing.</summary>
+        public FoodScrap GuidanceTarget => this;
+
         public void ResetScrap()
         {
             if (!hasSpawn) CaptureSpawn();

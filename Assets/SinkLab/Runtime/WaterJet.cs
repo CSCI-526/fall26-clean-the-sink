@@ -46,7 +46,8 @@ namespace SinkLab
         {
             HasHit = false;
             if (!IsSpraying || aimCamera == null || dt <= 0f || float.IsNaN(dt) || float.IsInfinity(dt)) return;
-            if (basin != null && basin.IsOverflowed) return;
+            SinkWorld ownerWorld = GetComponentInParent<SinkWorld>();
+            if (ownerWorld != null && ownerWorld.IsDrainSealed) return;
             Ray aimRay = aimCamera.ViewportPointToRay(new Vector3(.5f, .5f));
             Vector3 desiredPoint = aimRay.GetPoint(maxDistance);
             if (Physics.Raycast(aimRay, out RaycastHit aimHit, maxDistance, waterMask, QueryTriggerInteraction.Ignore))
@@ -79,25 +80,34 @@ namespace SinkLab
             float pressureFactor = Mathf.Lerp(.26f, 1f, Pressure);
             float wet = basin != null ? basin.JetEfficiency : 1f;
             pressureFactor *= wet;
-            SinkWorld owner = GetComponentInParent<SinkWorld>();
+            SinkWorld owner = ownerWorld;
             FoodScrap directFood = hit.collider.GetComponentInParent<FoodScrap>();
             foreach (FoodScrap food in FoodScrap.Active)
             {
                 if (food == null || food.IsDrained || food.Body == null || food.Body.isKinematic) continue;
                 if (food.GetComponentInParent<SinkWorld>() != owner) continue;
                 bool direct = food == directFood;
+                Vector3 exit = CornerExit(owner, food.Body.worldCenterOfMass);
+                bool inCorner = exit.sqrMagnitude > .001f;
                 // Splash is ground flow, not an area attack through walls or through another scrap.
-                if (!direct && (directFood != null || hit.normal.y < .65f)) continue;
+                // Water that hits a corner has to flow back into the basin, so it can still move a scrap trapped there.
+                if (!direct && directFood != null) continue;
+                if (!direct && hit.normal.y < .65f && !inCorner) continue;
                 Vector3 contact = food.ClosestPoint(hit.point);
                 float distance = Vector3.Distance(contact, hit.point);
-                if (!direct && distance > EffectiveRadius) continue;
-                if (!direct && !CanReachFootprint(hit.point, contact, food)) continue;
-                // The jet shoves food downstream, away from the nozzle. A hit just
-                // past a scrap must not drag it back toward the hose.
-                Vector3 push = GuidePush(direction, food.Body.worldCenterOfMass - hit.point, food.Body.worldCenterOfMass, direct);
-                float coverage = direct ? 1f : Mathf.Lerp(.28f, 1f, 1f - distance / EffectiveRadius);
+                float reach = inCorner && hit.normal.y < .65f ? .42f : EffectiveRadius;
+                if (!direct && distance > reach) continue;
+                if (!direct && !inCorner && !CanReachFootprint(hit.point, contact, food)) continue;
+                Vector3 push = GuidePush(direction, food.Body.worldCenterOfMass - hit.point, direct);
+                float cornerBoost = 1f;
+                if (inCorner)
+                {
+                    push = (exit * 1.35f + push * .2f).normalized;
+                    cornerBoost = 2.6f;
+                }
+                float coverage = direct ? 1f : Mathf.Lerp(.28f, 1f, 1f - distance / Mathf.Max(.05f, reach));
                 float modeForce = WideSpray ? .57f : 1f;
-                Vector3 force = (push + Vector3.down * .035f) * (waterForce * pressureFactor * coverage * modeForce);
+                Vector3 force = (push + Vector3.down * .035f) * (waterForce * pressureFactor * coverage * modeForce * cornerBoost);
                 food.Body.AddForce(force * dt, ForceMode.Impulse);
             }
 
@@ -120,7 +130,7 @@ namespace SinkLab
             }
         }
 
-        public Vector3 GuidePush(Vector3 streamDirection, Vector3 impactToBody, Vector3 bodyPosition, bool direct)
+        public Vector3 GuidePush(Vector3 streamDirection, Vector3 impactToBody, bool direct)
         {
             Vector3 downstream = Vector3.ProjectOnPlane(streamDirection, Vector3.up);
             if (downstream.sqrMagnitude < .0001f && aimCamera != null)
@@ -128,23 +138,39 @@ namespace SinkLab
             if (downstream.sqrMagnitude < .0001f) return Vector3.zero;
             downstream.Normalize();
 
-            Vector3 push = downstream;
             Vector3 lateral = Vector3.ProjectOnPlane(impactToBody, downstream);
-            if (!direct && lateral.sqrMagnitude > .0001f)
-                push = (downstream + lateral.normalized * .55f).normalized;
+            if (direct || lateral.sqrMagnitude < .0001f) return downstream;
+            return (downstream + lateral.normalized * .55f).normalized;
+        }
 
-            Drain mouth = basin != null ? basin.drain : null;
-            if (mouth == null)
+        static readonly Vector2[] CornerCenters =
+        {
+            new Vector2(-1.18f, -0.73f),
+            new Vector2(1.18f, -0.73f),
+            new Vector2(1.18f, 0.73f),
+            new Vector2(-1.18f, 0.73f)
+        };
+
+        static Vector3 CornerExit(SinkWorld owner, Vector3 worldPos)
+        {
+            if (owner == null || owner.sink == null) return Vector3.zero;
+            Transform sink = owner.sink.transform;
+            Vector3 local = sink.InverseTransformPoint(worldPos);
+            float best = .52f;
+            Vector2 found = default;
+            bool hit = false;
+            for (int i = 0; i < CornerCenters.Length; i++)
             {
-                SinkWorld owner = GetComponentInParent<SinkWorld>();
-                if (owner != null) mouth = owner.drain;
+                float distance = Vector2.Distance(new Vector2(local.x, local.z), CornerCenters[i]);
+                if (distance >= best) continue;
+                best = distance;
+                found = CornerCenters[i];
+                hit = true;
             }
-            if (mouth == null) return push;
-            Vector3 toDrain = mouth.transform.position - bodyPosition;
-            toDrain.y = 0f;
-            if (toDrain.sqrMagnitude < .0001f) return push;
-            float steer = Mathf.Lerp(.2f, .62f, 1f - Mathf.Clamp01(toDrain.magnitude / 1.5f));
-            return (push * (1f - steer) + toDrain.normalized * steer).normalized;
+            if (!hit) return Vector3.zero;
+            Vector3 exit = new Vector3(-found.x, 0f, -found.y);
+            if (exit.sqrMagnitude < .001f) return Vector3.zero;
+            return sink.TransformDirection(exit.normalized);
         }
 
         bool CanReachFootprint(Vector3 impact, Vector3 contact, FoodScrap target)
