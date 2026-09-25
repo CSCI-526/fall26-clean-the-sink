@@ -2,7 +2,7 @@
 
 A small first-person Unity prototype about getting stubborn food down a kitchen sink using only water.
 
-![Clean the Sink gameplay](Verification/gameview-start.png)
+![The sink at the start, with eight scraps and six stains](Verification/v2/start.png)
 
 ## Getting started
 
@@ -22,9 +22,22 @@ Use separate branches for changes and pull requests to review them. Coordinate e
 
 ## How to play
 
-Clear every scrap of food and every stain. **Success** appears when both are gone. **Fail** appears only when the sink is still dirty and the drain has closed completely. Water reaching the rim does not end the run. There is no grabbing, timer, or score.
+Clear every scrap of food and every stain. **Success** appears when both are gone. There is no grabbing, timer, or score.
 
-The basin is shallow, so a closed drain fills quickly. The hole also creeps smaller on its own, and each swallowed scrap makes it a little smaller. Walk around the counter and aim the spray. Water pushes food away from you, downstream. A dry drain does not pull. Standing water over an open hole forms a vortex.
+![Success, with no food or stains left](Verification/v2/success.png)
+
+**Fail** has two causes, and both apply while the sink is still dirty:
+
+- The drain closes completely on its own, with food or stains still left.
+- Water crosses the rim and spills.
+
+![Fail because the drain closed while the sink was still dirty](Verification/v2/drain-closed-failed.png)
+
+![Fail because the water spilled over the rim](Verification/v2/water-spilled-failed.png)
+
+Press E to plug the drain and raise the water. Floating scraps drift into a new layout, like shuffling a stuck arrangement into another chance. The basin is shallow, so a plug fills it quickly. Open it again before the water spills, or the run ends. Standing water over an open hole can pull nearby food toward the drain. The hole also creeps smaller on its own, and each swallowed scrap makes it a little smaller. Walk around the counter and aim the spray. Water pushes food away from you, downstream. A dry drain does not pull.
+
+![The drain plugged with E. The hole is shut and the water can rise](Verification/v2/press-E.png)
 
 | Input | Action |
 | --- | --- |
@@ -33,8 +46,8 @@ The basin is shallow, so a closed drain fills quickly. The hole also creeps smal
 | Hold left mouse | Spray |
 | Q, right mouse, 1, 2 | Switch focused jet and wide shower |
 | Mouse wheel | Pressure. Higher pressure pushes harder and fills the basin faster |
-| E | Plug or unplug the drain. Plugged, the water rises and floating food drifts into a new layout. Open, that water can pull food toward the hole |
-| F, or Use | Once per sink. The drain snaps fully open, then shrinks back to the size it had before that press at 30 times the normal speed. R restores the charge |
+| E | Plug or unplug the drain. Plugged, food floats and drifts; open it again before the water spills |
+| F, or Use | Once per sink. The drain snaps fully open, then shrinks back to the size it had before that press at 40 times the normal speed. R restores the charge |
 | R | Reset the sink, water, drain, and the one-shot charge |
 | Escape | Release the mouse and stop spraying |
 

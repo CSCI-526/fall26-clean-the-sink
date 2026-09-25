@@ -47,7 +47,7 @@ namespace SinkLab
             HasHit = false;
             if (!IsSpraying || aimCamera == null || dt <= 0f || float.IsNaN(dt) || float.IsInfinity(dt)) return;
             SinkWorld ownerWorld = GetComponentInParent<SinkWorld>();
-            if (ownerWorld != null && ownerWorld.IsDrainSealed) return;
+            if (ownerWorld != null && (ownerWorld.IsDrainSealed || ownerWorld.IsOverflowed)) return;
             Ray aimRay = aimCamera.ViewportPointToRay(new Vector3(.5f, .5f));
             Vector3 desiredPoint = aimRay.GetPoint(maxDistance);
             if (Physics.Raycast(aimRay, out RaycastHit aimHit, maxDistance, waterMask, QueryTriggerInteraction.Ignore))

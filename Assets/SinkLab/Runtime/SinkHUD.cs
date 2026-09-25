@@ -88,7 +88,7 @@ namespace SinkLab
                 GUI.Label(new Rect(banner.x + 12f, banner.y + 48f, banner.width - 24f, 22f), "Clean", _center);
                 GUI.Label(new Rect(banner.x + 12f, banner.y + 70f, banner.width - 24f, 20f), "R reset", _center);
             }
-            else if (world != null && world.IsDrainSealed)
+            else if (world != null && (world.IsOverflowed || world.IsDrainSealed))
             {
                 float bannerWidth = Mathf.Min(460f, width - 32f);
                 Rect banner = new Rect((width - bannerWidth) * 0.5f, 188f, bannerWidth, 95f);
@@ -97,7 +97,8 @@ namespace SinkLab
                 _complete.normal.textColor = new Color(0.95f, 0.34f, 0.28f);
                 GUI.Label(new Rect(banner.x + 12f, banner.y + 9f, banner.width - 24f, 35f), "Fail", _complete);
                 _complete.normal.textColor = previousComplete;
-                GUI.Label(new Rect(banner.x + 12f, banner.y + 48f, banner.width - 24f, 22f), "Drain closed", _center);
+                string reason = world.IsOverflowed ? "Water spilled" : "Drain closed";
+                GUI.Label(new Rect(banner.x + 12f, banner.y + 48f, banner.width - 24f, 22f), reason, _center);
                 GUI.Label(new Rect(banner.x + 12f, banner.y + 70f, banner.width - 24f, 20f), "R reset", _center);
             }
 

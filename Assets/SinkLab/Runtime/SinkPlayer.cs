@@ -92,7 +92,7 @@ namespace SinkLab
                         water.Pressure = Mathf.Clamp01(water.Pressure + Mathf.Sign(scroll) * 0.1f);
                     if (mouse.rightButton.wasPressedThisFrame)
                         water.WideSpray = !water.WideSpray;
-                    bool canSpray = !_mustReleaseFire && (world == null || !world.IsDrainSealed);
+                    bool canSpray = !_mustReleaseFire && (world == null || (!world.IsDrainSealed && !world.IsOverflowed));
                     water.SetSpraying(mouse.leftButton.isPressed && canSpray);
                 }
             }

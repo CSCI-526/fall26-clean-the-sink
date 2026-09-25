@@ -52,7 +52,7 @@ namespace SinkLab
         {
             if (originReady && Application.isPlaying && !IsSealed)
             {
-                float rate = shrinkPerSecond * (fastShrink ? 30f : 1f);
+                float rate = shrinkPerSecond * (fastShrink ? 40f : 1f);
                 radius = Mathf.Max(minRadius, radius - rate * Time.fixedDeltaTime);
                 if (fastShrink && radius <= fastShrinkTarget)
                 {

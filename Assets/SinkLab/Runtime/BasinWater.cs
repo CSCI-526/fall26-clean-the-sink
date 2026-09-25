@@ -57,7 +57,7 @@ namespace SinkLab
             if (water != null && water.IsSpraying)
             {
                 float pressure = water.Pressure * water.Pressure;
-                inflow = Mathf.Lerp(0.02f, 0.22f, pressure) / 3f;
+                inflow = Mathf.Lerp(0.02f, 0.22f, pressure) / 2f;
                 if (water.WideSpray) inflow *= 1.25f;
             }
 
@@ -78,7 +78,9 @@ namespace SinkLab
             NormalizedLevel = Mathf.Clamp01(NormalizedLevel + (inflow - outflow) * volume * dt);
             bool rising = NormalizedLevel > levelBefore + 0.00001f && NormalizedLevel >= 0.08f;
             if (NormalizedLevel >= 1f) NormalizedLevel = 1f;
+            bool wasOverflowed = IsOverflowed;
             IsOverflowed = NormalizedLevel >= 1f;
+            if (IsOverflowed && !wasOverflowed && water != null) water.SetSpraying(false);
 
             UpdateVolume();
             ApplyBuoyancy(rising);

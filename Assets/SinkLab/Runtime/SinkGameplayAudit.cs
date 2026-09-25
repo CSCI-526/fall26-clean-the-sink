@@ -62,6 +62,7 @@ namespace SinkLab.Editor
                 int frames=0;
                 while(!food.IsDrained&&Time.time<deadline)
                 {
+                    if(world.IsOverflowed){Finish(false,"Water spilled over the rim");yield break;}
                     if(world.drain!=null&&world.drain.IsSealed){Finish(false,"The drain sealed shut");yield break;}
                     FoodScrap subject=food.GuidanceTarget;
                     Vector3 position=subject.Body.position;
