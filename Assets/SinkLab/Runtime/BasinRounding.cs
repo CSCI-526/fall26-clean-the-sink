@@ -5,8 +5,8 @@ using UnityEngine.Rendering;
 namespace SinkLab
 {
     /// <summary>
-    /// Replaces the basin's sharp inner corners with fillets at play time.
-    /// Straight authored pieces stay in place; only their overlapping ends are shortened.
+    /// Tracks temporary resources during the one-time Editor authoring operation.
+    /// It is removed before the rounded basin prefab is saved.
     /// </summary>
     public sealed class BasinCorners : MonoBehaviour
     {
@@ -39,33 +39,59 @@ namespace SinkLab
         const float InnerHalfZ = 1.05f;
         const float FloorTop = 0.80f;
         const float FloorThickness = 0.12f;
-        const float WallHeight = 0.20f;
         const float WallThickness = 0.12f;
         const float RimBottom = 0.965f;
+        // The corner rim continues the same inner wall surface above this height.
+        const float CornerWallHeight = RimBottom - FloorTop;
         const float RimHeight = 0.07f;
         const float RimThickness = 0.195f;
         const int Segments = 12;
 
         public static void Apply(SinkAssembly sink)
         {
-            if (sink == null) return;
+            if (Application.isPlaying)
+            {
+                throw new System.InvalidOperationException(
+                    "Author rounded basin geometry before Play mode using SinkGeometryAuthoring.");
+            }
+
+            if (sink == null)
+            {
+                return;
+            }
+
             Transform root = sink.transform;
             BasinCorners state = sink.GetComponent<BasinCorners>();
-            if (state != null && state.shaped && root.Find("Rounded corners") != null) return;
-            if (state == null) state = sink.gameObject.AddComponent<BasinCorners>();
+            if (state != null && state.shaped && root.Find("Rounded corners") != null)
+            {
+                return;
+            }
+            if (state == null)
+            {
+                state = sink.gameObject.AddComponent<BasinCorners>();
+            }
+
             if (!state.shaped)
             {
-                if (!ReshapeStraightSections(root)) return;
+                if (!ReshapeStraightSections(root))
+                {
+                    return;
+                }
                 state.shaped = true;
             }
-            if (root.Find("Rounded corners") == null) BuildCorners(root, state);
+            if (root.Find("Rounded corners") == null)
+            {
+                BuildCorners(root, state);
+            }
+
             Physics.SyncTransforms();
         }
 
         static bool ReshapeStraightSections(Transform sink)
         {
-            float straightZ = (InnerHalfZ * 2f) - (CornerRadius * 2f) + 0.04f;
-            float straightX = (InnerHalfX * 2f) - (CornerRadius * 2f) + 0.04f;
+            // Meet the quarter arcs exactly; overlapping coplanar faces flicker at these joins.
+            float straightZ = (InnerHalfZ * 2f) - (CornerRadius * 2f);
+            float straightX = (InnerHalfX * 2f) - (CornerRadius * 2f);
             float floorZ = (InnerHalfZ * 2f) - (CornerRadius * 2f);
             bool found = SetAxis(sink, "Walls/Basin wall left", 2, straightZ);
             found &= SetAxis(sink, "Walls/Basin wall right", 2, straightZ);
@@ -95,7 +121,10 @@ namespace SinkLab
             Transform walls = sink.Find("Walls/Basin wall left");
             Transform floor = sink.Find("Floor/Basin floor left");
             Transform rim = sink.Find("Rim/Left rim");
-            if (walls == null || floor == null || rim == null) return;
+            if (walls == null || floor == null || rim == null)
+            {
+                return;
+            }
 
             Material wallMaterial = DoubleSided(walls.GetComponent<Renderer>().sharedMaterial);
             Material floorMaterial = DoubleSided(floor.GetComponent<Renderer>().sharedMaterial);
@@ -118,16 +147,17 @@ namespace SinkLab
             {
                 float sx = corners[i].x;
                 float sz = corners[i].y;
-                Vector3 center = new Vector3(sx * (InnerHalfX - CornerRadius), 0f, sz * (InnerHalfZ - CornerRadius));
+                Vector3 center = new Vector3(
+                    sx * (InnerHalfX - CornerRadius), 0f, sz * (InnerHalfZ - CornerRadius));
                 float start = StartAngle(sx, sz);
                 Place(holder, "Basin corner wall " + i, wallMaterial,
-                    QuarterRing(CornerRadius, CornerRadius + WallThickness, WallHeight, start, Segments),
+                    QuarterRing(CornerRadius, CornerRadius + WallThickness, CornerWallHeight, start, Segments),
                     center + Vector3.up * FloorTop, state);
                 Place(holder, "Basin corner rim " + i, rimMaterial,
                     QuarterRing(CornerRadius, CornerRadius + RimThickness, RimHeight, start, Segments),
                     center + Vector3.up * RimBottom, state);
                 Place(holder, "Basin corner floor " + i, floorMaterial,
-                    QuarterDisk(CornerRadius + 0.012f, FloorThickness, start, Segments),
+                    QuarterDisk(CornerRadius, FloorThickness, start, Segments),
                     center + Vector3.up * (FloorTop - FloorThickness), state, true);
                 BoxFill(holder, floorMaterial, sx, sz);
             }
@@ -138,17 +168,20 @@ namespace SinkLab
             float innerX = InnerHalfX - CornerRadius;
             float innerZ = InnerHalfZ - CornerRadius;
             const float drain = 0.28f;
-            float x0 = sx < 0f ? -(innerX + 0.012f) : drain;
-            float x1 = sx < 0f ? -drain : innerX + 0.012f;
-            float z0 = sz < 0f ? -InnerHalfZ : innerZ - 0.012f;
-            float z1 = sz < 0f ? -innerZ + 0.012f : InnerHalfZ;
+            float x0 = sx < 0f ? -innerX : drain;
+            float x1 = sx < 0f ? -drain : innerX;
+            float z0 = sz < 0f ? -InnerHalfZ : innerZ;
+            float z1 = sz < 0f ? -innerZ : InnerHalfZ;
             var box = GameObject.CreatePrimitive(PrimitiveType.Cube);
             box.name = "Basin floor fillet";
             box.transform.SetParent(holder, false);
             box.transform.localPosition = new Vector3((x0 + x1) * 0.5f, 0.74f, (z0 + z1) * 0.5f);
             box.transform.localScale = new Vector3(Mathf.Abs(x1 - x0), FloorThickness, Mathf.Abs(z1 - z0));
             Collider boxCollider = box.GetComponent<Collider>();
-            if (boxCollider != null) boxCollider.contactOffset = 0.001f;
+            if (boxCollider != null)
+            {
+                boxCollider.contactOffset = 0.001f;
+            }
             Renderer renderer = box.GetComponent<Renderer>();
             renderer.sharedMaterial = material;
             renderer.shadowCastingMode = ShadowCastingMode.Off;
@@ -197,58 +230,127 @@ namespace SinkLab
 
         static Mesh QuarterRing(float inner, float outer, float height, float start, int segments)
         {
-            int count = segments + 1;
-            var vertices = new List<Vector3>(count * 4);
-            for (int i = 0; i < count; i++)
-            {
-                float angle = start + (Mathf.PI * 0.5f) * (i / (float)segments);
-                Vector3 direction = new Vector3(Mathf.Cos(angle), 0f, Mathf.Sin(angle));
-                vertices.Add(direction * inner);
-                vertices.Add(direction * outer);
-                vertices.Add(direction * inner + Vector3.up * height);
-                vertices.Add(direction * outer + Vector3.up * height);
-            }
-
+            var vertices = new List<Vector3>();
+            var normals = new List<Vector3>();
             var triangles = new List<int>();
+            Vector3 top = Vector3.up * height;
+
             for (int i = 0; i < segments; i++)
             {
-                int a = i * 4;
-                int b = (i + 1) * 4;
-                AddQuad(triangles, a, b, b + 2, a + 2);
-                AddQuad(triangles, a + 1, a + 3, b + 3, b + 1);
-                AddQuad(triangles, a + 2, b + 2, b + 3, a + 3);
-                AddQuad(triangles, a, a + 1, b + 1, b);
+                float angle0 = start + Mathf.PI * 0.5f * (i / (float)segments);
+                float angle1 = start + Mathf.PI * 0.5f * ((i + 1) / (float)segments);
+                Vector3 direction0 = ArcDirection(angle0);
+                Vector3 direction1 = ArcDirection(angle1);
+                Vector3 inner0 = direction0 * inner;
+                Vector3 inner1 = direction1 * inner;
+                Vector3 outer0 = direction0 * outer;
+                Vector3 outer1 = direction1 * outer;
+
+                // Curved faces have radial normals. Caps use separate vertices so their
+                // perpendicular normals cannot bend the lighting along the vertical wall.
+                AddSurfaceQuad(vertices, normals, triangles,
+                    inner0, inner1, inner1 + top, inner0 + top,
+                    -direction0, -direction1, -direction1, -direction0);
+                AddSurfaceQuad(vertices, normals, triangles,
+                    outer0, outer0 + top, outer1 + top, outer1,
+                    direction0, direction0, direction1, direction1);
+                AddSurfaceQuad(vertices, normals, triangles,
+                    inner0 + top, inner1 + top, outer1 + top, outer0 + top, Vector3.up);
+                AddSurfaceQuad(vertices, normals, triangles,
+                    inner0, outer0, outer1, inner1, Vector3.down);
             }
-            AddQuad(triangles, 0, 2, 3, 1);
-            int last = (count - 1) * 4;
-            AddQuad(triangles, last, last + 1, last + 3, last + 2);
-            return Finish(vertices, triangles, "Basin corner ring");
+
+            Vector3 first = ArcDirection(start);
+            Vector3 last = ArcDirection(start + Mathf.PI * 0.5f);
+            AddSurfaceQuad(vertices, normals, triangles,
+                first * inner, first * inner + top, first * outer + top, first * outer,
+                Vector3.Cross(Vector3.up, first));
+            AddSurfaceQuad(vertices, normals, triangles,
+                last * inner, last * outer, last * outer + top, last * inner + top,
+                Vector3.Cross(last, Vector3.up));
+            return FinishCornerMesh(vertices, normals, triangles, "Basin corner ring");
         }
 
         static Mesh QuarterDisk(float radius, float height, float start, int segments)
         {
-            var vertices = new List<Vector3> { Vector3.zero, Vector3.up * height };
-            for (int i = 0; i <= segments; i++)
-            {
-                float angle = start + (Mathf.PI * 0.5f) * (i / (float)segments);
-                Vector3 direction = new Vector3(Mathf.Cos(angle), 0f, Mathf.Sin(angle)) * radius;
-                vertices.Add(direction);
-                vertices.Add(direction + Vector3.up * height);
-            }
-
+            var vertices = new List<Vector3>();
+            var normals = new List<Vector3>();
             var triangles = new List<int>();
+            Vector3 top = Vector3.up * height;
+
             for (int i = 0; i < segments; i++)
             {
-                int bottom = 2 + i * 2;
-                int next = bottom + 2;
-                triangles.Add(0); triangles.Add(next); triangles.Add(bottom);
-                triangles.Add(1); triangles.Add(bottom + 1); triangles.Add(next + 1);
-                AddQuad(triangles, bottom, next, next + 1, bottom + 1);
+                float angle0 = start + Mathf.PI * 0.5f * (i / (float)segments);
+                float angle1 = start + Mathf.PI * 0.5f * ((i + 1) / (float)segments);
+                Vector3 direction0 = ArcDirection(angle0);
+                Vector3 direction1 = ArcDirection(angle1);
+                Vector3 outer0 = direction0 * radius;
+                Vector3 outer1 = direction1 * radius;
+
+                AddSurfaceTriangle(vertices, normals, triangles,
+                    Vector3.zero, outer0, outer1, Vector3.down);
+                AddSurfaceTriangle(vertices, normals, triangles,
+                    top, outer1 + top, outer0 + top, Vector3.up);
+                AddSurfaceQuad(vertices, normals, triangles,
+                    outer0, outer0 + top, outer1 + top, outer1,
+                    direction0, direction0, direction1, direction1);
             }
-            AddQuad(triangles, 0, 1, 3, 2);
-            int end = vertices.Count - 2;
-            AddQuad(triangles, 0, end, end + 1, 1);
-            return Finish(vertices, triangles, "Basin corner floor");
+
+            Vector3 first = ArcDirection(start);
+            Vector3 last = ArcDirection(start + Mathf.PI * 0.5f);
+            AddSurfaceQuad(vertices, normals, triangles,
+                Vector3.zero, top, first * radius + top, first * radius,
+                Vector3.Cross(Vector3.up, first));
+            AddSurfaceQuad(vertices, normals, triangles,
+                Vector3.zero, last * radius, last * radius + top, top,
+                Vector3.Cross(last, Vector3.up));
+            return FinishCornerMesh(vertices, normals, triangles, "Basin corner floor");
+        }
+
+        static Vector3 ArcDirection(float angle)
+        {
+            return new Vector3(Mathf.Cos(angle), 0f, Mathf.Sin(angle));
+        }
+
+        static void AddSurfaceTriangle(
+            List<Vector3> vertices, List<Vector3> normals, List<int> triangles,
+            Vector3 a, Vector3 b, Vector3 c, Vector3 normal)
+        {
+            int first = vertices.Count;
+            vertices.AddRange(new[] { a, b, c });
+            normals.AddRange(new[] { normal, normal, normal });
+            triangles.Add(first);
+            triangles.Add(first + 1);
+            triangles.Add(first + 2);
+        }
+
+        static void AddSurfaceQuad(
+            List<Vector3> vertices, List<Vector3> normals, List<int> triangles,
+            Vector3 a, Vector3 b, Vector3 c, Vector3 d, Vector3 normal)
+        {
+            AddSurfaceQuad(vertices, normals, triangles, a, b, c, d, normal, normal, normal, normal);
+        }
+
+        static void AddSurfaceQuad(
+            List<Vector3> vertices, List<Vector3> normals, List<int> triangles,
+            Vector3 a, Vector3 b, Vector3 c, Vector3 d,
+            Vector3 normalA, Vector3 normalB, Vector3 normalC, Vector3 normalD)
+        {
+            int first = vertices.Count;
+            vertices.AddRange(new[] { a, b, c, d });
+            normals.AddRange(new[] { normalA, normalB, normalC, normalD });
+            AddQuad(triangles, first, first + 1, first + 2, first + 3);
+        }
+
+        static Mesh FinishCornerMesh(
+            List<Vector3> vertices, List<Vector3> normals, List<int> triangles, string name)
+        {
+            var mesh = new Mesh { name = name };
+            mesh.SetVertices(vertices);
+            mesh.SetNormals(normals);
+            mesh.SetTriangles(triangles, 0);
+            mesh.RecalculateBounds();
+            return mesh;
         }
 
         static Mesh RoundedPrism(float halfX, float halfZ, float radius, float height, int segments)

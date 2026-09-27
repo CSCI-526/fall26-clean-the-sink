@@ -10,6 +10,7 @@ workflow. It is project-local: it does not install a global skill or alter other
 | --- | --- | --- |
 | [Root AGENTS.md](../../AGENTS.md) | Rules automatically visible to repository agents | Every commission |
 | [PROJECT.md](PROJECT.md) | Experience, architecture, decision authority, and current facts | Before planning changes |
+| [CODING_CONVENTIONS.md](CODING_CONVENTIONS.md) | Human-readable source, Unity refactor safety, and maintainer review | Before source changes and during review |
 | [WORKFLOW.md](WORKFLOW.md) | Scope, live Editor access, preservation, collaboration, recovery | Before implementation; on tool failure |
 | [VERIFICATION.md](VERIFICATION.md) | Checks by change type and what constitutes evidence | Before implementation and before handoff |
 | [LESSONS.md](LESSONS.md) | Past failures, symptoms, prevention and evidence | When touching the affected area |
@@ -24,6 +25,7 @@ workflow. It is project-local: it does not install a global skill or alter other
 | Editor readiness | `./Tools/harness preflight --json` checks discovery, project identity and Editor readiness via the guarded launcher | Readiness is a snapshot, not permission to overwrite unsaved work |
 | Result integrity | `./Tools/harness result report.json --tests --json` validates completion and nested success | Does not establish freshness, correct test selection or subjective quality |
 | Game behavior | Existing EditMode/PlayMode contracts plus scoped live inspection/playthrough | Coverage gaps remain explicit in VERIFICATION.md |
+| Code readability | AGENTS.md requirements, C# editor formatting defaults, and the maintainer review in CODING_CONVENTIONS.md | EditorConfig support varies; the offline check does not judge readability or enforce formatting |
 | Intent and authoring quality | User alignment, reviewer judgment and visible evidence | Cannot be proved by a passing static check |
 
 The harness does not automatically mutate a scene, run all tests, restart Unity,

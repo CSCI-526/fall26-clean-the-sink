@@ -1,3 +1,5 @@
+using System;
+using System.Collections.Generic;
 using UnityEngine;
 
 namespace SinkLab
@@ -12,57 +14,97 @@ namespace SinkLab
         [Min(0f)] public float shrinkPerSecond = 0.0005f;
         [Min(0f)] public float shrinkPerScrap = 0.006f;
         [Min(0f)]
-        [Tooltip("Distance below the drain opening, in its local frame, that food must cross before collection. Moves and rotates with this sink.")]
+        [Tooltip("Distance below the drain opening, in its local frame, that food must cross before collection.")]
         public float captureDepth = .07f;
+
+        [Header("Authored drain parts")]
+        [Tooltip("The saved circular opening. Its renderer and collider share the same mesh.")]
+        public MeshFilter openingMesh;
+        [Tooltip("A non-convex collider on the static opening, so the center remains hollow.")]
+        public MeshCollider openingCollider;
+        public Transform plug;
+        public Transform darkInterior;
+
         public float captureHeight => CaptureFrame.TransformPoint(new Vector3(0f, -captureDepth, 0f)).y;
         public int DrainedCount { get; private set; }
         public bool IsOpen { get; private set; } = true;
         public bool IsSealed { get; private set; }
         public bool HasFullOpenCharge { get; private set; } = true;
-        public float StartRadius => originReady ? startRadius : radius;
+        public float StartRadius => _originReady ? _startRadius : radius;
+
+        // Rebuild only after a visible change in radius, measured in sink-local meters.
+        const float OpeningRebuildStep = 0.0015f;
+        const float OpeningThickness = 0.12f;
+        const float OpeningOuterMargin = 0.02f;
+        const int OpeningSegments = 96;
 
         Transform CaptureFrame => drainCenter != null ? drainCenter : transform;
-        float startRadius;
-        bool originReady;
-        Transform[] lips;
-        Transform darkInterior;
-        Transform iris;
-        MeshFilter irisFilter;
-        Transform collar;
-        Mesh irisMesh;
-        Transform plug;
-        Material plugMaterial;
-        readonly System.Collections.Generic.List<Mesh> segmentMeshes = new System.Collections.Generic.List<Mesh>();
-        float builtRadius = -1f;
-        bool fastShrink;
-        float fastShrinkTarget;
+        float _startRadius;
+        bool _originReady;
+        Mesh _authoredOpeningMesh;
+        Mesh _runtimeOpeningMesh;
+        float _authoredHoleRadius;
+        float _openingOuterHalfWidth;
+        float _builtRadius = -1f;
+        bool _fastShrink;
+        float _fastShrinkTarget;
 
         void Awake()
         {
-            startRadius = Mathf.Max(radius, minRadius);
-            originReady = true;
+            _startRadius = Mathf.Max(radius, minRadius);
+            _originReady = true;
+            _openingOuterHalfWidth = _startRadius + OpeningOuterMargin;
+            _authoredOpeningMesh = openingMesh != null ? openingMesh.sharedMesh : null;
+            if (_authoredOpeningMesh != null)
+            {
+                // The saved centered annulus defines the fixed floor footprint independently
+                // of a prefab variant's configured starting aperture.
+                Bounds bounds = _authoredOpeningMesh.bounds;
+                _openingOuterHalfWidth = Mathf.Min(bounds.extents.x, bounds.extents.z);
+                _authoredHoleRadius = float.PositiveInfinity;
+                foreach (Vector3 vertex in _authoredOpeningMesh.vertices)
+                {
+                    float radialDistance = new Vector2(vertex.x, vertex.z).magnitude;
+                    _authoredHoleRadius = Mathf.Min(_authoredHoleRadius, radialDistance);
+                }
+
+                // An overridden aperture must be built on Start, even if the difference
+                // is smaller than the normal animation update threshold.
+                if (Mathf.Approximately(_authoredHoleRadius, _startRadius))
+                {
+                    _builtRadius = _authoredHoleRadius;
+                }
+            }
         }
 
         void Start()
         {
-            if (Application.isPlaying) EnsureCollar();
+            UpdateOpening();
         }
 
         void FixedUpdate()
         {
-            if (originReady && Application.isPlaying && !IsSealed)
+            if (_originReady && Application.isPlaying && !IsSealed)
             {
-                float rate = shrinkPerSecond * (fastShrink ? 40f : 1f);
+                float rate = shrinkPerSecond * (_fastShrink ? 40f : 1f);
                 radius = Mathf.Max(minRadius, radius - rate * Time.fixedDeltaTime);
-                if (fastShrink && radius <= fastShrinkTarget)
+                if (_fastShrink && radius <= _fastShrinkTarget)
                 {
-                    radius = Mathf.Max(minRadius, fastShrinkTarget);
-                    fastShrink = false;
+                    radius = Mathf.Max(minRadius, _fastShrinkTarget);
+                    _fastShrink = false;
                 }
-                if (radius <= minRadius + 0.0001f) Seal();
+
+                if (radius <= minRadius + 0.0001f)
+                {
+                    Seal();
+                }
             }
-            UpdateCollar();
-            foreach (FoodScrap food in FoodScrap.Active) TryConsume(food);
+
+            UpdateOpening();
+            foreach (FoodScrap food in FoodScrap.Active)
+            {
+                TryConsume(food);
+            }
         }
 
         public void SetOpen(bool open)
@@ -76,47 +118,86 @@ namespace SinkLab
         /// <summary>One use per run. Snaps the opening back to its largest size and leaves it unplugged.</summary>
         public bool TryOpenFully()
         {
-            if (!HasFullOpenCharge) return false;
+            if (!HasFullOpenCharge)
+            {
+                return false;
+            }
+
             HasFullOpenCharge = false;
-            fastShrinkTarget = radius;
-            fastShrink = true;
+            _fastShrinkTarget = radius;
+            _fastShrink = true;
             IsSealed = false;
             IsOpen = true;
-            radius = originReady ? startRadius : Mathf.Max(radius, minRadius);
-            if (radius <= fastShrinkTarget) fastShrink = false;
-            UpdateCollar();
+            radius = _originReady ? _startRadius : Mathf.Max(radius, minRadius);
+            if (radius <= _fastShrinkTarget)
+            {
+                _fastShrink = false;
+            }
+
+            UpdateOpening();
             ApplyPlug();
             return true;
         }
 
         void Seal()
         {
-            if (IsSealed) return;
+            if (IsSealed)
+            {
+                return;
+            }
+
             IsSealed = true;
             radius = minRadius;
             SinkWorld owner = GetComponentInParent<SinkWorld>();
-            if (owner != null && owner.water != null) owner.water.SetSpraying(false);
-            UpdateCollar();
+            if (owner != null && owner.water != null)
+            {
+                owner.water.SetSpraying(false);
+            }
+
+            UpdateOpening();
             ApplyPlug();
         }
 
         public bool TryConsume(FoodScrap food)
         {
-            if (!IsOpen || IsSealed) return false;
-            if (food == null || food.IsDrained || !food.isActiveAndEnabled || food.Body == null) return false;
-            if (food.GetComponentInParent<SinkWorld>() != GetComponentInParent<SinkWorld>()) return false;
+            if (!IsOpen || IsSealed)
+            {
+                return false;
+            }
+
+            if (food == null || food.IsDrained || !food.isActiveAndEnabled || food.Body == null)
+            {
+                return false;
+            }
+
+            if (food.GetComponentInParent<SinkWorld>() != GetComponentInParent<SinkWorld>())
+            {
+                return false;
+            }
+
             Vector3 position = CaptureFrame.InverseTransformPoint(food.Body.worldCenterOfMass);
             Vector2 offset = new Vector2(position.x, position.z);
             // No magnet or distance shortcut: the center must cross below the actual floor opening.
             bool inside = squareOpening
                 ? Mathf.Abs(offset.x) < radius && Mathf.Abs(offset.y) < radius
                 : offset.sqrMagnitude < radius * radius;
-            if (position.y >= -captureDepth || !inside) return false;
+            if (position.y >= -captureDepth || !inside)
+            {
+                return false;
+            }
+
             food.MarkDrained();
             DrainedCount++;
             radius = Mathf.Max(minRadius, radius - shrinkPerScrap);
-            if (Application.isPlaying && radius <= minRadius + 0.0001f) Seal();
-            else UpdateCollar();
+            if (Application.isPlaying && radius <= minRadius + 0.0001f)
+            {
+                Seal();
+            }
+            else
+            {
+                UpdateOpening();
+            }
+
             return true;
         }
 
@@ -126,270 +207,208 @@ namespace SinkLab
             IsOpen = true;
             IsSealed = false;
             HasFullOpenCharge = true;
-            fastShrink = false;
-            if (originReady) radius = startRadius;
-            UpdateCollar();
+            _fastShrink = false;
+            if (_originReady)
+            {
+                radius = _startRadius;
+            }
+
+            UpdateOpening();
             ApplyPlug();
         }
 
-        void EnsureCollar()
+        void UpdateOpening()
         {
-            if (iris != null) return;
-            var lipList = new System.Collections.Generic.List<Transform>();
-            foreach (Transform child in transform)
+            if (!_originReady)
             {
-                if (child.name.StartsWith("Drain lip")) lipList.Add(child);
-                else if (child.name == "Dark drain interior") darkInterior = child;
-            }
-            lips = lipList.ToArray();
-            for (int i = 0; i < lips.Length; i++)
-            {
-                if (lips[i] == null) continue;
-                Renderer lipRenderer = lips[i].GetComponent<Renderer>();
-                if (lipRenderer != null) lipRenderer.enabled = false;
-                Collider lipCollider = lips[i].GetComponent<Collider>();
-                if (lipCollider != null) lipCollider.enabled = false;
+                return;
             }
 
-            // The authored floor gap is square. A flush ring closes its corners so the
-            // opening the player sees and walks food into is a circle at floor height.
-            squareOpening = false;
-            var ring = new GameObject("Drain iris");
-            ring.transform.SetParent(transform, false);
-            ring.transform.localPosition = Vector3.zero;
-            ring.transform.localRotation = Quaternion.identity;
-            iris = ring.transform;
-            irisFilter = ring.AddComponent<MeshFilter>();
-            MeshRenderer renderer = ring.AddComponent<MeshRenderer>();
-            renderer.sharedMaterial = FloorMaterial();
-            renderer.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
-            var blocks = new GameObject("Drain collar");
-            blocks.transform.SetParent(ring.transform, false);
-            collar = blocks.transform;
-            EnsurePlug();
-            UpdateCollar();
-        }
-
-        Material FloorMaterial()
-        {
-            SinkAssembly assembly = GetComponentInParent<SinkAssembly>();
-            Transform floor = assembly != null ? assembly.transform.Find("Floor/Basin floor left") : null;
-            Renderer floorRenderer = floor != null ? floor.GetComponent<Renderer>() : null;
-            if (floorRenderer != null && floorRenderer.sharedMaterial != null)
+            float holeRadius = Mathf.Clamp(radius, minRadius, _startRadius);
+            if (openingMesh != null && openingCollider != null)
             {
-                Material copy = new Material(floorRenderer.sharedMaterial) { name = "Drain floor" };
-                copy.hideFlags = HideFlags.DontSave;
-                if (copy.HasProperty("_Cull")) copy.SetInt("_Cull", (int)UnityEngine.Rendering.CullMode.Off);
-                return copy;
+                UpdateOpeningMesh(holeRadius);
             }
-            Renderer interiorRenderer = darkInterior != null ? darkInterior.GetComponent<Renderer>() : null;
-            return interiorRenderer != null ? interiorRenderer.sharedMaterial : null;
-        }
 
-        void UpdateCollar()
-        {
-            if (!originReady || iris == null) return;
-            float hole = Mathf.Clamp(radius, minRadius, startRadius);
-            if (irisMesh == null || Mathf.Abs(builtRadius - hole) > 0.0015f)
-            {
-                float outer = startRadius + 0.02f;
-                Mesh next = BuildFlushRing(outer, hole, 0.12f, 36);
-                next.hideFlags = HideFlags.DontSave;
-                if (irisMesh != null) Destroy(irisMesh);
-                irisMesh = next;
-                irisFilter.sharedMesh = next;
-                RebuildCollar(outer, hole, 0.12f, 24);
-                builtRadius = hole;
-            }
-            ScaleInterior(hole);
+            ScaleInterior(holeRadius);
             ApplyPlug();
         }
 
-        void EnsurePlug()
+        void UpdateOpeningMesh(float holeRadius)
         {
-            if (plug != null) return;
-            var stopper = GameObject.CreatePrimitive(PrimitiveType.Cylinder);
-            stopper.name = "Drain plug";
-            stopper.transform.SetParent(transform, false);
-            Collider capsule = stopper.GetComponent<Collider>();
-            if (capsule != null)
+            if (_authoredOpeningMesh != null && Mathf.Approximately(holeRadius, _authoredHoleRadius))
             {
-                capsule.enabled = false;
-                Destroy(capsule);
+                // Reuse the asset only when its actual aperture matches the requested one.
+                // A variant's reset radius may require a runtime mesh instead.
+                AssignOpeningMesh(_authoredOpeningMesh);
+                ReleaseRuntimeMesh();
+                _builtRadius = _authoredHoleRadius;
+                return;
             }
-            MeshFilter filter = stopper.GetComponent<MeshFilter>();
-            MeshCollider meshCollider = stopper.AddComponent<MeshCollider>();
-            meshCollider.convex = true;
-            meshCollider.sharedMesh = filter.sharedMesh;
-            Renderer renderer = stopper.GetComponent<Renderer>();
-            plugMaterial = new Material(renderer.sharedMaterial) { name = "Drain plug" };
-            plugMaterial.hideFlags = HideFlags.DontSave;
-            Color color = new Color(0.18f, 0.2f, 0.22f);
-            plugMaterial.color = color;
-            if (plugMaterial.HasProperty("_BaseColor")) plugMaterial.SetColor("_BaseColor", color);
-            renderer.sharedMaterial = plugMaterial;
-            renderer.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
-            plug = stopper.transform;
-            ApplyPlug();
+
+            bool radiusChanged = Mathf.Abs(_builtRadius - holeRadius) > OpeningRebuildStep;
+            bool reachedMinimum = holeRadius <= minRadius && _builtRadius != holeRadius;
+            bool reachedStart = Mathf.Approximately(holeRadius, _startRadius) &&
+                !Mathf.Approximately(holeRadius, _builtRadius);
+            if (!radiusChanged && !reachedMinimum && !reachedStart)
+            {
+                return;
+            }
+
+            Mesh next = BuildOpeningMesh(
+                _openingOuterHalfWidth,
+                holeRadius,
+                OpeningThickness,
+                OpeningSegments);
+            next.hideFlags = HideFlags.DontSave;
+            AssignOpeningMesh(next);
+            ReleaseRuntimeMesh();
+            _runtimeOpeningMesh = next;
+            _builtRadius = holeRadius;
+        }
+
+        void AssignOpeningMesh(Mesh mesh)
+        {
+            if (openingMesh.sharedMesh != mesh)
+            {
+                openingMesh.sharedMesh = mesh;
+            }
+
+            if (openingCollider.sharedMesh != mesh)
+            {
+                openingCollider.sharedMesh = mesh;
+            }
         }
 
         void ApplyPlug()
         {
-            if (plug == null) return;
-            float hole = Mathf.Max(minRadius, radius);
-            plug.localScale = new Vector3(hole * 2f, 0.012f, hole * 2f);
+            if (plug == null)
+            {
+                return;
+            }
+
+            float holeRadius = Mathf.Max(minRadius, radius);
+            plug.localScale = new Vector3(holeRadius * 2f, 0.012f, holeRadius * 2f);
             plug.localPosition = new Vector3(0f, -0.008f, 0f);
             plug.gameObject.SetActive(!IsOpen);
         }
 
-        void RebuildCollar(float squareHalf, float holeRadius, float thickness, int segments)
+        /// <summary>
+        /// Creates a closed square-to-circle annulus at local floor height for rendering and static collision.
+        /// The caller owns the returned mesh. Segment count is rounded up to a multiple of eight so every
+        /// square corner has a vertex. Adjacent sections share vertices and have no internal dividing faces.
+        /// </summary>
+        public static Mesh BuildOpeningMesh(float squareHalf, float holeRadius, float thickness, int segments)
         {
-            if (collar == null) return;
-            for (int i = collar.childCount - 1; i >= 0; i--)
+            ValidatePositiveDimension(squareHalf, nameof(squareHalf));
+            ValidatePositiveDimension(holeRadius, nameof(holeRadius));
+            ValidatePositiveDimension(thickness, nameof(thickness));
+            if (holeRadius >= squareHalf)
             {
-                GameObject child = collar.GetChild(i).gameObject;
-                if (Application.isPlaying) Destroy(child);
-                else DestroyImmediate(child);
+                throw new ArgumentOutOfRangeException(nameof(holeRadius), "The opening must fit inside the square.");
             }
-            for (int i = 0; i < segmentMeshes.Count; i++)
-            {
-                Mesh old = segmentMeshes[i];
-                if (old == null) continue;
-                if (Application.isPlaying) Destroy(old);
-                else DestroyImmediate(old);
-            }
-            segmentMeshes.Clear();
 
-            holeRadius = Mathf.Min(holeRadius, squareHalf - 0.004f);
+            segments = Mathf.Max(8, Mathf.CeilToInt(segments / 8f) * 8);
+            var vertices = new Vector3[segments * 4];
+            var uv = new Vector2[vertices.Length];
             for (int i = 0; i < segments; i++)
             {
-                float a0 = i * Mathf.PI * 2f / segments;
-                float a1 = (i + 1) * Mathf.PI * 2f / segments;
-                Mesh piece = SegmentMesh(a0, a1, holeRadius, squareHalf, thickness);
-                piece.hideFlags = HideFlags.DontSave;
-                segmentMeshes.Add(piece);
-                var block = new GameObject("Drain collar block");
-                block.transform.SetParent(collar, false);
-                MeshCollider collider = block.AddComponent<MeshCollider>();
-                collider.convex = true;
-                collider.contactOffset = 0.001f;
-                collider.sharedMesh = piece;
+                float angle = i * Mathf.PI * 2f / segments;
+                Vector2 inner = new Vector2(Mathf.Cos(angle), Mathf.Sin(angle)) * holeRadius;
+                Vector2 outer = SquareEdge(angle, squareHalf);
+                int vertex = i * 4;
+                vertices[vertex] = new Vector3(inner.x, 0f, inner.y);
+                vertices[vertex + 1] = new Vector3(outer.x, 0f, outer.y);
+                vertices[vertex + 2] = new Vector3(inner.x, -thickness, inner.y);
+                vertices[vertex + 3] = new Vector3(outer.x, -thickness, outer.y);
+                for (int offset = 0; offset < 4; offset++)
+                {
+                    Vector3 point = vertices[vertex + offset];
+                    uv[vertex + offset] = new Vector2(point.x, point.z) / (squareHalf * 2f) + Vector2.one * 0.5f;
+                }
             }
-        }
 
-        static Mesh SegmentMesh(float a0, float a1, float holeRadius, float squareHalf, float thickness)
-        {
-            float lip = Mathf.Max(0.02f, holeRadius - 0.035f);
-            Vector2 inner0 = new Vector2(Mathf.Cos(a0), Mathf.Sin(a0)) * lip;
-            Vector2 inner1 = new Vector2(Mathf.Cos(a1), Mathf.Sin(a1)) * lip;
-            Vector2 outer0 = SquareEdge(a0, squareHalf);
-            Vector2 outer1 = SquareEdge(a1, squareHalf);
-            var mesh = new Mesh { name = "Drain collar block" };
-            mesh.vertices = new[]
-            {
-                new Vector3(inner0.x, -0.055f, inner0.y),
-                new Vector3(inner1.x, -0.055f, inner1.y),
-                new Vector3(outer1.x, -0.004f, outer1.y),
-                new Vector3(outer0.x, -0.004f, outer0.y),
-                new Vector3(inner0.x, -thickness, inner0.y),
-                new Vector3(inner1.x, -thickness, inner1.y),
-                new Vector3(outer1.x, -thickness, outer1.y),
-                new Vector3(outer0.x, -thickness, outer0.y)
-            };
-            mesh.triangles = new[]
-            {
-                0, 2, 1, 0, 3, 2,
-                4, 5, 6, 4, 6, 7,
-                0, 1, 5, 0, 5, 4,
-                3, 6, 2, 3, 7, 6,
-                0, 4, 7, 0, 7, 3,
-                1, 2, 6, 1, 6, 5
-            };
-            mesh.RecalculateBounds();
-            return mesh;
-        }
-
-        static Mesh BuildFlushRing(float squareHalf, float holeRadius, float thickness, int segments)
-        {
-            holeRadius = Mathf.Min(holeRadius, squareHalf - 0.004f);
-            var vertices = new System.Collections.Generic.List<Vector3>(segments * 8);
-            var triangles = new System.Collections.Generic.List<int>(segments * 36);
+            var triangles = new List<int>(segments * 24);
             for (int i = 0; i < segments; i++)
             {
-                float a0 = i * Mathf.PI * 2f / segments;
-                float a1 = (i + 1) * Mathf.PI * 2f / segments;
-                Vector2 inner0 = new Vector2(Mathf.Cos(a0), Mathf.Sin(a0)) * holeRadius;
-                Vector2 inner1 = new Vector2(Mathf.Cos(a1), Mathf.Sin(a1)) * holeRadius;
-                Vector2 outer0 = SquareEdge(a0, squareHalf);
-                Vector2 outer1 = SquareEdge(a1, squareHalf);
-                int v = vertices.Count;
-                vertices.Add(new Vector3(inner0.x, 0f, inner0.y));
-                vertices.Add(new Vector3(inner1.x, 0f, inner1.y));
-                vertices.Add(new Vector3(outer1.x, 0f, outer1.y));
-                vertices.Add(new Vector3(outer0.x, 0f, outer0.y));
-                vertices.Add(new Vector3(inner0.x, -thickness, inner0.y));
-                vertices.Add(new Vector3(inner1.x, -thickness, inner1.y));
-                vertices.Add(new Vector3(outer1.x, -thickness, outer1.y));
-                vertices.Add(new Vector3(outer0.x, -thickness, outer0.y));
-                AddQuad(triangles, v, v + 3, v + 2, v + 1);
-                AddQuad(triangles, v + 4, v + 5, v + 6, v + 7);
-                AddQuad(triangles, v, v + 1, v + 5, v + 4);
-                AddQuad(triangles, v + 3, v + 7, v + 6, v + 2);
-                AddQuad(triangles, v, v + 4, v + 7, v + 3);
-                AddQuad(triangles, v + 1, v + 2, v + 6, v + 5);
+                int current = i * 4;
+                int next = ((i + 1) % segments) * 4;
+                AddQuad(triangles, current, next, next + 1, current + 1); // Top faces upward.
+                AddQuad(triangles, current + 2, current + 3, next + 3, next + 2);
+                AddQuad(triangles, current, current + 2, next + 2, next); // Inner wall faces the hole.
+                AddQuad(triangles, current + 1, next + 1, next + 3, current + 3);
             }
-            var mesh = new Mesh { name = "Flush drain ring" };
-            mesh.SetVertices(vertices);
+
+            var mesh = new Mesh { name = "Drain opening" };
+            mesh.vertices = vertices;
+            mesh.uv = uv;
             mesh.SetTriangles(triangles, 0);
             mesh.RecalculateNormals();
             mesh.RecalculateBounds();
             return mesh;
         }
 
+        static void ValidatePositiveDimension(float value, string parameterName)
+        {
+            if (value <= 0f || float.IsNaN(value) || float.IsInfinity(value))
+            {
+                throw new ArgumentOutOfRangeException(parameterName, "Mesh dimensions must be finite and positive.");
+            }
+        }
+
         static Vector2 SquareEdge(float angle, float half)
         {
             float cosine = Mathf.Cos(angle);
             float sine = Mathf.Sin(angle);
-            float reachX = Mathf.Abs(cosine) > 0.0001f ? half / Mathf.Abs(cosine) : 1000f;
-            float reachZ = Mathf.Abs(sine) > 0.0001f ? half / Mathf.Abs(sine) : 1000f;
-            float reach = Mathf.Min(reachX, reachZ);
+            float reach = half / Mathf.Max(Mathf.Abs(cosine), Mathf.Abs(sine));
             return new Vector2(cosine * reach, sine * reach);
         }
 
-        static void AddQuad(System.Collections.Generic.List<int> triangles, int a, int b, int c, int d)
+        static void AddQuad(List<int> triangles, int a, int b, int c, int d)
         {
-            triangles.Add(a); triangles.Add(b); triangles.Add(c);
-            triangles.Add(a); triangles.Add(c); triangles.Add(d);
+            triangles.Add(a);
+            triangles.Add(b);
+            triangles.Add(c);
+            triangles.Add(a);
+            triangles.Add(c);
+            triangles.Add(d);
         }
 
-        void ScaleInterior(float opening)
+        void ScaleInterior(float openingRadius)
         {
-            if (darkInterior == null) return;
+            if (darkInterior == null)
+            {
+                return;
+            }
+
             Vector3 scale = darkInterior.localScale;
-            scale.x = opening * 2f;
-            scale.z = opening * 2f;
+            scale.x = openingRadius * 2f;
+            scale.z = openingRadius * 2f;
             darkInterior.localScale = scale;
+        }
+
+        void ReleaseRuntimeMesh()
+        {
+            if (_runtimeOpeningMesh == null)
+            {
+                return;
+            }
+
+            if (Application.isPlaying)
+            {
+                Destroy(_runtimeOpeningMesh);
+            }
+            else
+            {
+                DestroyImmediate(_runtimeOpeningMesh);
+            }
+
+            _runtimeOpeningMesh = null;
         }
 
         void OnDestroy()
         {
-            if (irisMesh != null)
-            {
-                if (Application.isPlaying) Destroy(irisMesh);
-                else DestroyImmediate(irisMesh);
-            }
-            for (int i = 0; i < segmentMeshes.Count; i++)
-            {
-                Mesh old = segmentMeshes[i];
-                if (old == null) continue;
-                if (Application.isPlaying) Destroy(old);
-                else DestroyImmediate(old);
-            }
-            if (plugMaterial != null)
-            {
-                if (Application.isPlaying) Destroy(plugMaterial);
-                else DestroyImmediate(plugMaterial);
-            }
+            ReleaseRuntimeMesh();
         }
     }
 }

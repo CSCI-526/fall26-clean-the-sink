@@ -1,0 +1,25 @@
+{
+  "success": true,
+  "command": "command eval",
+  "data": {
+    "command": "eval",
+    "parameters": {
+      "code": "var sink = UnityEngine.Object.FindFirstObjectByType<SinkLab.SinkWorld>().sink.transform; var names = new[] { \"Floor/Basin floor left\", \"Floor/Basin floor front\", \"Floor/Basin floor back\", \"Walls/Basin wall left\", \"Rim/Left rim\", \"Drain\" }; return string.Join(\"\\n\", System.Linq.Enumerable.Select(names, name => name + \" position=\" + sink.Find(name).localPosition.ToString(\"F4\") + \" scale=\" + sink.Find(name).localScale.ToString(\"F4\")));",
+      "format": "json"
+    },
+    "result": {
+      "output": null,
+      "diagnostics": [],
+      "success": true,
+      "result": "Floor/Basin floor left position=(-0.8900, 0.7400, 0.0000) scale=(1.2200, 0.1200, 1.4600)\nFloor/Basin floor front position=(0.0000, 0.7400, -0.5400) scale=(0.5600, 0.1200, 1.0200)\nFloor/Basin floor back position=(0.0000, 0.7400, 0.7900) scale=(0.5600, 0.1200, 0.5200)\nWalls/Basin wall left position=(-1.5600, 0.9000, 0.0000) scale=(0.1200, 0.2000, 1.5000)\nRim/Left rim position=(-1.6000, 1.0000, 0.0000) scale=(0.1900, 0.0700, 1.5000)\nDrain position=(0.0000, 0.8000, 0.2500) scale=(1.0000, 1.0000, 1.0000)"
+    },
+    "target": {
+      "host": "127.0.0.1",
+      "port": 7800,
+      "projectPath": "/Users/lilyxu/Desktop/water gun experiment project"
+    },
+    "success": true
+  },
+  "errors": [],
+  "warnings": []
+}

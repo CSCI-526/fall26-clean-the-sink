@@ -1,0 +1,34 @@
+{
+  "success": true,
+  "command": "command eval",
+  "data": {
+    "command": "eval",
+    "parameters": {
+      "code": "var world = UnityEngine.Object.FindFirstObjectByType<SinkLab.SinkWorld>(); return new { complete = world.IsComplete, food = world.FoodRemaining, stains = world.StainsRemaining, audioSources = world.GetComponentsInChildren<UnityEngine.AudioSource>(true).Length, rimRenderers = world.drain.transform.Find(\"Rim\").GetComponentsInChildren<UnityEngine.MeshRenderer>().Length, openingMatchesCollider = world.drain.openingMesh.sharedMesh == world.drain.openingCollider.sharedMesh, roundedGeometry = world.sink.transform.Find(\"Rounded corners\") != null, basinTrackerCount = world.sink.GetComponents<SinkLab.BasinCorners>().Length };",
+      "format": "json"
+    },
+    "result": {
+      "output": null,
+      "diagnostics": [],
+      "success": true,
+      "result": {
+        "complete": true,
+        "food": 0,
+        "stains": 0,
+        "audioSources": 0,
+        "rimRenderers": 1,
+        "openingMatchesCollider": true,
+        "roundedGeometry": true,
+        "basinTrackerCount": 0
+      }
+    },
+    "target": {
+      "host": "127.0.0.1",
+      "port": 7800,
+      "projectPath": "/Users/lilyxu/Desktop/water gun experiment project"
+    },
+    "success": true
+  },
+  "errors": [],
+  "warnings": []
+}

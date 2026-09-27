@@ -29,6 +29,12 @@ is the scene the user has open. Keep the chosen scene/prefab explicit in edits.
 
 ## 3. Preserve and author
 
+For source changes, follow [CODING_CONVENTIONS.md](CODING_CONVENTIONS.md) and use the
+repository's editor formatting defaults. Make new and modified methods readable;
+keep unrelated cleanup out of the task. Existing compressed code does not override
+this requirement. Preserve behavior and serialized names during cleanup, and make
+intentional behavior changes distinguishable in the diff and handoff.
+
 Use live Editor APIs for scene, GameObject, prefab and asset changes whenever the
 Editor is reachable. Edit source code normally, then use the Editor's recompile
 workflow and check readiness/diagnostics. Do not hand-author asset YAML to bypass
@@ -71,6 +77,10 @@ State what changed and why, the checks actually executed, their results, remaini
 limits and how to inspect/use the change. Restore temporary test settings and leave
 the Editor in the requested state; for an ordinary prototype handoff, leave the
 saved scene stopped and ready to Play unless the user requested otherwise.
+
+Before handing off source changes, complete the maintainer review in
+[CODING_CONVENTIONS.md](CODING_CONVENTIONS.md). Fix readability problems introduced
+by the task, and identify relevant remaining debt without claiming it was refactored.
 
 Update relevant instructions/tests when a requirement intentionally changes. Record
 new reproducible failure lessons with a check, not another blanket restriction.

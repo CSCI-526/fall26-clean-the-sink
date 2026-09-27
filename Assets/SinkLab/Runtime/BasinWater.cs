@@ -6,10 +6,11 @@ namespace SinkLab
 {
     /// <summary>
     /// Spray adds water. Higher pressure fills faster, and a smaller drain empties slower.
-    /// Crossing the rim is an immediate loss until the sink is reset.
+    /// Overflow reflects the current water level at the rim.
     /// </summary>
     public sealed class BasinWater : MonoBehaviour
     {
+        // Basin dimensions are local to its unit-scale, upright sink assembly.
         public const float FloorY = 0.80f;
         public const float OverflowY = 1.035f;
         const float FormerDepth = 1.195f - FloorY;
@@ -20,8 +21,14 @@ namespace SinkLab
 
         public float NormalizedLevel { get; private set; }
         public bool IsOverflowed { get; private set; }
-        public float SurfaceY => FloorY + Mathf.Clamp01(NormalizedLevel) * (OverflowY - FloorY);
+        public float LocalSurfaceY => FloorY + Mathf.Clamp01(NormalizedLevel) * (OverflowY - FloorY);
+
+        /// <summary>World-space surface height for translated and yaw-rotated sink assemblies.</summary>
+        public float SurfaceY => BasinFrame.TransformPoint(new Vector3(0f, LocalSurfaceY, 0f)).y;
         public float JetEfficiency => Mathf.Lerp(1f, 0.38f, Mathf.Clamp01(NormalizedLevel));
+
+        Transform BasinFrame => world != null && world.sink != null ? world.sink.transform : transform;
+        float LocalDepth => Mathf.Max(0f, LocalSurfaceY - FloorY);
 
         Transform volume;
         Material volumeMaterial;
@@ -290,47 +297,75 @@ namespace SinkLab
 
         void UpdateVortex()
         {
+            const float minimumVisibleDepth = 0.012f;
+            const float surfaceOffset = 0.012f;
+            const float minimumVortexRadius = 0.05f;
+            const float rotationDegreesPerSecond = 140f;
+
             EnsureVortex();
-            if (vortex == null || drain == null) return;
-            float depth = Mathf.Max(0f, SurfaceY - FloorY);
-            bool show = depth > 0.012f && drain.IsOpen;
-            if (vortex.gameObject.activeSelf != show) vortex.gameObject.SetActive(show);
-            if (!show) return;
-            Vector3 mouth = drain.transform.position;
-            float hole = Mathf.Max(0.05f, drain.radius);
-            vortex.position = new Vector3(mouth.x, SurfaceY + 0.012f, mouth.z);
-            vortex.rotation = Quaternion.Euler(0f, Time.time * 140f, 0f);
-            vortex.localScale = new Vector3(hole, 1f, hole);
+            if (vortex == null || drain == null)
+            {
+                return;
+            }
+
+            bool show = LocalDepth > minimumVisibleDepth && drain.IsOpen;
+            if (vortex.gameObject.activeSelf != show)
+            {
+                vortex.gameObject.SetActive(show);
+            }
+            if (!show)
+            {
+                return;
+            }
+
+            Vector3 worldDrainCenter = drain.transform.position;
+            float vortexRadius = Mathf.Max(minimumVortexRadius, drain.radius);
+            vortex.position = new Vector3(worldDrainCenter.x, SurfaceY + surfaceOffset, worldDrainCenter.z);
+            vortex.rotation = Quaternion.Euler(0f, Time.time * rotationDegreesPerSecond, 0f);
+            vortex.localScale = new Vector3(vortexRadius, 1f, vortexRadius);
         }
 
         void EnsureVolume()
         {
-            if (volume != null) return;
-            Transform parent = world != null && world.sink != null ? world.sink.transform : transform;
-            var go = new GameObject("Basin water");
-            go.layer = 2;
-            go.transform.SetParent(parent, false);
-            go.transform.localPosition = new Vector3(0f, FloorY, 0f);
-            go.transform.localRotation = Quaternion.identity;
+            if (volume != null)
+            {
+                return;
+            }
+
+            var volumeObject = new GameObject("Basin water");
+            volumeObject.layer = 2;
+            volumeObject.transform.SetParent(BasinFrame, false);
+            volumeObject.transform.localPosition = new Vector3(0f, FloorY, 0f);
+            volumeObject.transform.localRotation = Quaternion.identity;
             Mesh mesh = BasinRounding.BuildWaterSurface(1.47f, 1.02f, 0.30f, 1f);
             mesh.hideFlags = HideFlags.DontSave;
-            go.AddComponent<MeshFilter>().sharedMesh = mesh;
-            MeshRenderer renderer = go.AddComponent<MeshRenderer>();
+            volumeObject.AddComponent<MeshFilter>().sharedMesh = mesh;
+            MeshRenderer renderer = volumeObject.AddComponent<MeshRenderer>();
             renderer.shadowCastingMode = ShadowCastingMode.Off;
             renderer.receiveShadows = false;
             volumeMaterial = CreateWaterMaterial();
             renderer.sharedMaterial = volumeMaterial;
-            volume = go.transform;
+            volume = volumeObject.transform;
         }
 
         void UpdateVolume()
         {
-            if (volume == null) return;
-            float depth = Mathf.Max(0f, SurfaceY - FloorY);
-            bool visible = depth > 0.004f;
+            const float minimumVisibleDepth = 0.004f;
+
+            if (volume == null)
+            {
+                return;
+            }
+
+            float localDepth = LocalDepth;
+            bool visible = localDepth > minimumVisibleDepth;
             volume.gameObject.SetActive(visible);
-            if (!visible) return;
-            volume.localScale = new Vector3(1f, depth, 1f);
+            if (!visible)
+            {
+                return;
+            }
+
+            volume.localScale = new Vector3(1f, localDepth, 1f);
             if (volumeMaterial != null && volumeMaterial.HasProperty(BaseColor))
             {
                 Color calm = new Color(0.25f, 0.74f, 0.95f, 0.5f);

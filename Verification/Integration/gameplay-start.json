@@ -1,0 +1,30 @@
+{
+  "success": true,
+  "command": "command eval",
+  "data": {
+    "command": "eval",
+    "parameters": {
+      "code": "if (!UnityEditor.EditorApplication.isPlaying) { throw new System.InvalidOperationException(\"Play mode is required\"); } var world = UnityEngine.Object.FindFirstObjectByType<SinkLab.SinkWorld>(); UnityEngine.Time.timeScale = 2f; var audit = world.gameObject.AddComponent<SinkLab.Editor.SinkGameplayAudit>(); audit.outputSubdirectory = \"Integration\"; return new { audit = \"started\", timeScale = UnityEngine.Time.timeScale, audioSources = world.GetComponentsInChildren<UnityEngine.AudioSource>(true).Length, audioEnabled = world.player.GetComponent<SinkLab.WaterVisuals>().enableWaterAudio };",
+      "format": "json"
+    },
+    "result": {
+      "output": null,
+      "diagnostics": [],
+      "success": true,
+      "result": {
+        "audit": "started",
+        "timeScale": 2,
+        "audioSources": 0,
+        "audioEnabled": false
+      }
+    },
+    "target": {
+      "host": "127.0.0.1",
+      "port": 7800,
+      "projectPath": "/Users/lilyxu/Desktop/water gun experiment project"
+    },
+    "success": true
+  },
+  "errors": [],
+  "warnings": []
+}

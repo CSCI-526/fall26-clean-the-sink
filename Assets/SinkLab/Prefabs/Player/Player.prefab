@@ -344,6 +344,7 @@ MonoBehaviour:
   sprayRadius: 0.34
   waterForce: 0.2
   cleaningRate: 0.48
+  basin: {fileID: 0}
 --- !u!114 &1311655641667698522
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -379,6 +380,10 @@ MonoBehaviour:
   hoseAnchor: {fileID: 0}
   waterMaterial: {fileID: 2100000, guid: ab8a46851091f43d5b28496ccff6de5f, type: 2}
   hoseMaterial: {fileID: 2100000, guid: 59c7666a14b034753a3fc177c85fe65e, type: 2}
+  focusedStartWidth: 0.034
+  focusedEndWidth: 0.05
+  wideStartWidth: 0.016
+  wideEndWidth: 0.028
 --- !u!114 &2546471695975685659
 MonoBehaviour:
   m_ObjectHideFlags: 0

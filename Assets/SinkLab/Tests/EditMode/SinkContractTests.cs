@@ -192,52 +192,52 @@ namespace SinkLab.Tests
         }
 
         [Test]
-        public void FoodFallingThroughSquareOpeningCornerIsCollected_OutsideOldCircularBoundary()
+        public void CircularOpeningBlocksSquareCorners_AndLetsFoodFallThroughItsCenter()
         {
-            Assert.That(drain.squareOpening, Is.True,
-                "The drain's acceptance shape must match this world's square opening.");
+            Assert.That(drain.squareOpening, Is.False,
+                "Saved capture bounds must match the authored circular opening before Play.");
             ParkFoodClearOfSink();
             FoodScrap food = world.foods[0];
-            // Use an actual food body, reduced to leave generous clearance from the
-            // hole edges. This tests the opening shape, not whether a large scrap jams.
-            food.transform.localScale *= .5f;
-            Physics.SyncTransforms();
-            Vector3 extents = food.GetComponent<Collider>().bounds.extents;
-            const float edgeClearance = .025f;
-            Vector2 offset = new Vector2(drain.radius - extents.x - edgeClearance,
-                drain.radius - extents.z - edgeClearance);
-            Assert.That(offset.x, Is.GreaterThan(0f));
-            Assert.That(offset.y, Is.GreaterThan(0f));
-            Assert.That(offset.sqrMagnitude, Is.GreaterThan(drain.radius * drain.radius),
-                "This fixture must fall in the square corner excluded by the old circle.");
-
+            // Keep the actual collider shape while giving this aperture check generous clearance.
+            food.transform.localScale *= 0.5f;
             Vector3 center = DrainCenter();
-            PlaceFoodCenter(food, new Vector3(center.x + offset.x, center.y + .22f, center.z + offset.y));
+            float diagonalOffset = drain.radius * 0.85f;
+            PlaceFoodCenter(food, center + new Vector3(diagonalOffset, 0.22f, diagonalOffset));
             food.Body.useGravity = true;
             food.Body.isKinematic = false;
             food.Body.linearVelocity = Vector3.zero;
             food.Body.angularVelocity = Vector3.zero;
             food.Body.WakeUp();
-            int initialCount = drain.DrainedCount;
-            Assert.That(drain.TryConsume(food), Is.False, "Food above the opening must still fall first.");
 
-            // Physics.Simulate does not invoke FixedUpdate in EditMode. Invoke only
-            // the normal drain check after each real physics step; never teleport down.
-            for (int i = 0; i < 100 && !food.IsDrained; i++)
+            for (int step = 0; step < 100; step++)
             {
-                Physics.Simulate(.02f);
+                Physics.Simulate(0.02f);
                 drain.TryConsume(food);
             }
 
-            Assert.That(food.Body.worldCenterOfMass.y, Is.LessThan(drain.captureHeight),
-                "The physical scrap must have passed below the basin floor.");
-            Vector3 finalCenter = food.Body.worldCenterOfMass;
-            Vector2 finalOffset = new Vector2(finalCenter.x - center.x, finalCenter.z - center.z);
-            Assert.That(finalOffset.sqrMagnitude, Is.GreaterThan(drain.radius * drain.radius),
-                "The scrap must remain in the corner, not drift into the circular center.");
-            Assert.That(food.IsDrained, Is.True,
-                "A scrap that falls through the actual square hole must not be stranded in its corner.");
-            Assert.That(drain.DrainedCount, Is.EqualTo(initialCount + 1));
+            Assert.That(food.IsDrained, Is.False,
+                "The area outside the circle must be solid even within the former square gap.");
+            Assert.That(food.Body.worldCenterOfMass.y, Is.GreaterThan(drain.captureHeight),
+                "The saved opening collider must support the scrap above capture depth.");
+
+            PlaceFoodCenter(food, center + Vector3.up * 0.22f);
+            food.Body.linearVelocity = Vector3.zero;
+            food.Body.angularVelocity = Vector3.zero;
+            food.Body.WakeUp();
+            Assert.That(drain.TryConsume(food), Is.False,
+                "Being above the opening must not count as collection.");
+
+            // EditMode does not call FixedUpdate. Apply only the production collection check
+            // after each real physics step; the body must fall through the saved geometry.
+            for (int step = 0; step < 100 && !food.IsDrained; step++)
+            {
+                Physics.Simulate(0.02f);
+                drain.TryConsume(food);
+            }
+
+            Assert.That(food.IsDrained, Is.True);
+            Assert.That(drain.DrainedCount, Is.EqualTo(1));
+            Assert.That(food.Body.worldCenterOfMass.y, Is.LessThan(drain.captureHeight));
         }
 
         [Test]
@@ -252,6 +252,9 @@ namespace SinkLab.Tests
             PlaceFoodCenter(food, frame.TransformPoint(new Vector3(0f, .1f, 0f)));
             Assert.That(drain.TryConsume(food), Is.False);
             PlaceFoodCenter(food, frame.TransformPoint(new Vector3(drain.radius * .85f, -.15f, drain.radius * .85f)));
+            Assert.That(drain.TryConsume(food), Is.False,
+                "A point in the former square corner lies outside the circular capture area.");
+            PlaceFoodCenter(food, frame.TransformPoint(new Vector3(drain.radius * .45f, -.15f, drain.radius * .45f)));
             Assert.That(drain.TryConsume(food), Is.True,
                 "A reusable sink's opening and capture depth must follow its transform.");
             Assert.That(food.IsDrained, Is.True);

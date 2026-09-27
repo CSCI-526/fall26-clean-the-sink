@@ -1,0 +1,23 @@
+{
+    "finished": true,
+    "passed": true,
+    "status": "All stains washed and food drained through movement, aim, spray and available drain tools",
+    "foodRemaining": 0,
+    "stainsRemaining": 0,
+    "seconds": 86.80423736572266,
+    "observations": [
+        "Stain 1: washed",
+        "Stain 2: washed",
+        "Stain 3: washed",
+        "Stain 4: washed",
+        "Stain 5: washed",
+        "Stain 6: washed",
+        "Food scrap 1: physically drained",
+        "Food scrap 2: physically drained",
+        "Food scrap 3: physically drained",
+        "Food scrap 4: physically drained",
+        "Food scrap 5: physically drained",
+        "Food scrap 6: physically drained",
+        "Food scrap 7: physically drained"
+    ]
+}

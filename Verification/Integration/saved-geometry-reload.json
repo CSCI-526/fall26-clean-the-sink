@@ -1,0 +1,25 @@
+{
+  "success": true,
+  "command": "command eval",
+  "data": {
+    "command": "eval",
+    "parameters": {
+      "code": "foreach (var guid in UnityEditor.AssetDatabase.FindAssets(\"t:Mesh\", new[] { \"Assets/SinkLab/Meshes/RoundedBasin\" })) { UnityEditor.AssetDatabase.ImportAsset(UnityEditor.AssetDatabase.GUIDToAssetPath(guid), UnityEditor.ImportAssetOptions.ForceUpdate); } if (UnityEngine.SceneManagement.SceneManager.GetActiveScene().isDirty) { throw new System.InvalidOperationException(\"Scene has unsaved work.\"); } UnityEditor.SceneManagement.EditorSceneManager.OpenScene(\"Assets/SinkLab/Scenes/SinkLab.unity\"); return \"Reimported saved meshes and reloaded the clean saved scene\";",
+      "format": "json"
+    },
+    "result": {
+      "output": null,
+      "diagnostics": [],
+      "success": true,
+      "result": "Reimported saved meshes and reloaded the clean saved scene"
+    },
+    "target": {
+      "host": "127.0.0.1",
+      "port": 7800,
+      "projectPath": "/Users/lilyxu/Desktop/water gun experiment project"
+    },
+    "success": true
+  },
+  "errors": [],
+  "warnings": []
+}

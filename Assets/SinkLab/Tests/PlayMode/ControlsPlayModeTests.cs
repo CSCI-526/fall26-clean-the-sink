@@ -279,6 +279,40 @@ namespace SinkLab.Tests
                 "The real nozzle must clear the near rim and wash the visible stain while LMB is held.");
         }
 
+        [UnityTest]
+        public IEnumerator DrainKeysTogglePlug_UseOneCharge_AndResetRestoresIt()
+        {
+            Assert.That(world.drain.IsOpen, Is.True);
+            Assert.That(world.drain.HasFullOpenCharge, Is.True);
+
+            yield return InputFrame(new[] { Key.E });
+            Assert.That(world.drain.IsOpen, Is.False);
+            Assert.That(world.drain.plug.gameObject.activeSelf, Is.True);
+
+            yield return InputFrame();
+            yield return InputFrame(new[] { Key.E });
+            Assert.That(world.drain.IsOpen, Is.True);
+            Assert.That(world.drain.plug.gameObject.activeSelf, Is.False);
+
+            yield return InputFrame(new[] { Key.F });
+            Assert.That(world.drain.HasFullOpenCharge, Is.False);
+            Assert.That(world.drain.radius, Is.EqualTo(world.drain.StartRadius).Within(0.005f));
+
+            yield return InputFrame();
+            float radiusBeforeSecondPress = world.drain.radius;
+            yield return InputFrame(new[] { Key.F });
+            Assert.That(world.drain.HasFullOpenCharge, Is.False);
+            Assert.That(world.drain.radius, Is.LessThanOrEqualTo(radiusBeforeSecondPress + 0.0001f));
+
+            yield return InputFrame(new[] { Key.E });
+            Assert.That(world.drain.IsOpen, Is.False);
+            yield return InputFrame(new[] { Key.R });
+            Assert.That(world.drain.IsOpen, Is.True);
+            Assert.That(world.drain.HasFullOpenCharge, Is.True);
+            Assert.That(world.drain.plug.gameObject.activeSelf, Is.False);
+            Assert.That(world.basin.NormalizedLevel, Is.Zero);
+        }
+
         IEnumerator InputFrame(Key[] keys = null, MouseState? mouseState = null)
         {
             keyboard.MakeCurrent();

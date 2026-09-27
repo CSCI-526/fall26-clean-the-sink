@@ -2,7 +2,9 @@
 
 A small first-person Unity prototype about getting stubborn food down a kitchen sink using only water.
 
-![The sink at the start, with eight scraps and six stains](Verification/v2/start.png)
+![The integrated sink with saved rounded geometry and continuous drain rim](Verification/Integration/rendered-saved-scene.png)
+
+The opening image shows the integrated prefabs. The gameplay screenshots below show the earlier v2 prototype.
 
 ## Getting started
 
@@ -22,20 +24,22 @@ Use separate branches for changes and pull requests to review them. Coordinate e
 
 ## How to play
 
-Clear every scrap of food and every stain. **Success** appears when both are gone. There is no grabbing, timer, or score.
+Clear every scrap of food and every stain. **Success** appears when both are gone. This prototype focuses on one sink, with no grabbing, countdown display, score, or progression.
 
 ![Success, with no food or stains left](Verification/v2/success.png)
 
-**Fail** has two causes, and both apply while the sink is still dirty:
+**Fail** appears while either of these conditions holds and the sink is still dirty:
 
 - The drain closes completely on its own, with food or stains still left.
 - Water crosses the rim and spills.
+
+The indicator follows the current state. It can clear when the water drains below the rim, and an unused F charge can reopen a sealed drain. Press R for a full reset.
 
 ![Fail because the drain closed while the sink was still dirty](Verification/v2/drain-closed-failed.png)
 
 ![Fail because the water spilled over the rim](Verification/v2/water-spilled-failed.png)
 
-Press E to plug the drain and raise the water. Floating scraps drift into a new layout, like shuffling a stuck arrangement into another chance. The basin is shallow, so a plug fills it quickly. Open it again before the water spills, or the run ends. Standing water over an open hole can pull nearby food toward the drain. The hole also creeps smaller on its own, and each swallowed scrap makes it a little smaller. Walk around the counter and aim the spray. Water pushes food away from you, downstream. A dry drain does not pull.
+Press E to plug the drain and raise the water. While the water rises, floating scraps drift into a new layout. The shallow basin fills quickly, so reopen the drain before it spills. Standing water over an open hole can pull nearby food toward the drain. The hole also creeps smaller on its own, and each swallowed scrap makes it a little smaller. Walk around the counter and aim the spray. Water pushes food downstream. A dry drain does not pull.
 
 ![The drain plugged with E. The hole is shut and the water can rise](Verification/v2/press-E.png)
 
@@ -51,19 +55,21 @@ Press E to plug the drain and raise the water. Floating scraps drift into a new 
 | R | Reset the sink, water, drain, and the one-shot charge |
 | Escape | Release the mouse and stop spraying |
 
-The bottom bar lists these controls. The lower-right card is the one-shot drain tool and is marked **Once**. After Play, the basin corners are rounded and the drain opening is circular. The Scene view still shows the authored square layout.
+The bottom bar lists these controls. The lower-right card is the one-shot drain tool and is marked **Once**. The rounded basin and circular drain opening are visible in both the Scene and Game views.
 
 ## How it works
 
 - A CharacterController provides FPS movement and prevents walking through the sink.
 - The Input System handles mouse and keyboard. Releasing focus or pressing Escape stops the water; the click used to recapture the cursor does not spray.
 - Water raycasts from the view to select the aim point, then from the nozzle to check obstruction. The surface footprint transfers impulses to rigidbodies. Particles and lines show the stream and splashes; these visuals do not secretly collect food.
-- Stains shrink progressively under exposed water. Food has mass, friction, gravity, collisions and momentum. During play the drain is a circle, and a scrap is collected only after its center passes below that opening.
-- The water shader and all shapes are simple procedural/default assets. Running-water audio is generated in memory.
+- Stains shrink progressively under exposed water. Food has mass, friction, gravity, collisions and momentum. A scrap is collected only after its center passes below the circular drain opening.
+- Walls rebound food through physical contact. Their native physics material uses bounciness `0.4` and `Maximum` bounce combination; the global bounce threshold remains `2 m/s`. Hard contacts can rebound while gentle contact and the basin floor stay calm. Spraying near a corner has no extra range or invisible escape force. The separate shuffle while standing water rises is retained.
+- Water height follows the sink's position and yaw at unit scale. Buoyancy, wet friction, drain pull and vortex height use the world surface; water depth and volume geometry stay local to the sink.
+- The water shader and all shapes are simple procedural/default assets. Audio is disabled for the class prototype; the procedural running-water sound is preserved behind the default-off `WaterVisuals.enableWaterAudio` option. Leave it off for the submission. It can be restored before entering Play mode when audio is allowed again.
 
 ## Prefab authoring
 
-The level is composed from connected, nested prefab instances. `SinkWorld` coordinates references, progress and reset; it no longer creates meshes, materials or scene objects.
+The level is composed from connected, nested prefab instances. `SinkWorld` coordinates references, progress, reset and standing water. Basin walls, corners, rim and floor are saved assets; Play mode does not rebuild them. Water visuals and the shrinking drain opening still respond at runtime.
 
 ```text
 Sink Level                         [Levels/SinkLevel.prefab]
@@ -74,7 +80,11 @@ Sink Level                         [Levels/SinkLevel.prefab]
 │   ├── Rim                        [4 SinkRim instances]
 │   ├── Counter                    [4 CounterPanel instances]
 │   ├── Cabinet                    [4 CabinetPanel instances]
-│   ├── Drain                      [Parts/Drain.prefab; one nested DrainRim mesh]
+│   ├── Rounded corners            [Parts/RoundedBasinCorners.prefab]
+│   ├── Drain                      [Parts/Drain.prefab]
+│   │   ├── Rim                    [Parts/DrainRim.prefab; one continuous hollow mesh]
+│   │   ├── Drain opening          [one mesh shared by renderer and MeshCollider]
+│   │   └── Drain plug             [saved stopper]
 │   └── Faucet                     [Parts/Faucet.prefab]
 ├── Mess
 │   ├── Food                       [FoodCube / FoodSphere instances]
@@ -84,7 +94,9 @@ Sink Level                         [Levels/SinkLevel.prefab]
     └── Lighting                   [Lighting.prefab]
 ```
 
-All 18 reusable prefabs are under `Assets/SinkLab/Prefabs`. The drain rim is a single hollow annular mesh in `Meshes/DrainRim.asset`, nested through `Sink/Parts/DrainRim.prefab`; it has no individual lip objects. Open a part prefab to edit shared behavior or appearance; its connected instances inherit the change. Open `Sink.prefab` to arrange its pieces together. Select its parent to move the entire sink, or a subgroup such as `Walls` to manipulate those pieces together. Keep assembly/group scales at one; size the individual panels. Food spheres use uniform scale to match their colliders.
+Reusable prefabs are under `Assets/SinkLab/Prefabs`. The fixed drain rim is a single hollow annular mesh in `Meshes/DrainRim.asset`, nested through `Sink/Parts/DrainRim.prefab`; it has no individual lip objects. The separate `Meshes/DrainOpening.asset` defines the circular hole in the basin floor. Its renderer and one non-convex MeshCollider share the same mesh, including when the radius changes during play. The collider remains on the static sink and the center stays open.
+
+Open a part prefab to edit shared behavior or appearance; its connected instances inherit the change. Open `Sink.prefab` to arrange its pieces together, including the nested `RoundedBasinCorners.prefab`. Select its parent to move the entire sink, or a subgroup such as `Walls` to manipulate those pieces together. Keep assembly/group scales at one; size the individual panels. Food spheres use uniform scale to match their colliders.
 
 Food placements vary color and mass using deliberate instance overrides; stain placements vary size and rotation. Other common behavior stays inherited. Use a prefab variant for a reusable alternative instead of unpacking it. Instance overrides take precedence over future changes to those specific properties on the source prefab.
 
@@ -92,18 +104,18 @@ To author another level, duplicate the scene or drag `SinkLevel.prefab` into a s
 
 `Sink Lab > Create level from prefabs` restores the example scene from the current `SinkLevel.prefab`. Save existing scene changes first, and use a scene copy to retain manual variations. This command instantiates the prefab and never regenerates its parts or overwrites prefab edits.
 
-The original scene, including its unsaved state at conversion time, is preserved at `Assets/SinkLab/Scenes/Backups/BeforePrefabRefactor.unity`. `SinkPrefabMigration` is a guarded one-time conversion tool; it refuses to overwrite the completed prefab library.
+The original scene, including its unsaved state at conversion time, is preserved at `Assets/SinkLab/Scenes/Backups/BeforePrefabRefactor.unity`. `SinkPrefabMigration` is a guarded one-time conversion tool; it refuses to overwrite the completed prefab library. `SinkGeometryAuthoring` saves rounded basin geometry and the initial drain opening for the integrated prototype; it is an Editor authoring tool, not a Play mode builder.
 
 ## Verification
 
 Unity Test Runner assemblies:
 
 - `SinkLab.EditModeTests`: adversarial contracts against the populated world plus the actual saved scene, including occlusion positive controls, water-off behavior, completion, local drain geometry, reset, persistent wet friction, matching food colliders, grounded movement, prefab nesting/inheritance, and isolation between levels.
-- `SinkLab.PlayModeTests`: actual synthetic mouse and keyboard events exercise the production input and movement code.
+- `SinkLab.PlayModeTests`: synthetic mouse and keyboard events exercise production controls; water tests compare translated and yaw-rotated sinks, buoyancy, drain tools and reset.
 
 `Assets/SinkLab/Runtime/SinkGameplayAudit.cs` is an editor-only complete-playthrough driver. It walks the same controller, aims the same camera, and switches the same faucet. It never applies forces to food or directly cleans/collects anything. Use `Sink Lab > Run complete gameplay audit` to start it. It writes its observations and scene captures under `Verification`.
 
-The latest executed results and captures live in `Verification`.
+Executed results and captures live in `Verification`. Check each report's date and scope; historical passes and screenshots do not verify later changes.
 
 ## Agent commissions
 

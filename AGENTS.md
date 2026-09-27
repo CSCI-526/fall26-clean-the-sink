@@ -60,7 +60,24 @@ new product requirements.
   was tested, remaining limits, and the verified final state. Do not call the work
   complete with required checks unresolved.
 
+## Human-readable source — mandatory
+
+- Read [CODING_CONVENTIONS.md](Docs/Harness/CODING_CONVENTIONS.md) before source
+  changes. Engineers must be able to understand and maintain the code without this chat.
+- Write normally formatted, descriptive code: one statement per line, clear names,
+  braced control flow, and methods with coherent responsibilities. Do not compress
+  code to save lines or tokens, or copy the style of existing compressed methods.
+- Apply these conventions to new and modified methods. Keep cleanup within the task;
+  do not turn a small fix into an unrelated project-wide refactor.
+- Preserve Unity serialization, references, lifecycle order and gameplay behavior
+  during readability cleanup. Separate intentional behavior changes in the review.
+- Review the changed code as a returning engineer before handoff. Formatting tools
+  and passing tests do not replace the readability review in CODING_CONVENTIONS.md.
+
 ## Working together
+
+Use descriptive branch names without a `codex/` prefix, as requested by the user.
+Follow any exact branch name the user supplies.
 
 Assign independent agents bounded files/subtasks. One owner mutates the live
 Editor at a time; other agents can review/read independently. Do not overwrite

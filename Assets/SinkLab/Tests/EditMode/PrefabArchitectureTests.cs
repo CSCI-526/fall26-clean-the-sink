@@ -81,14 +81,17 @@ namespace SinkLab.Tests
             AssertChildren(RequirePath(world.transform, "Mess"), "Food", "Stains");
             AssertChildren(RequirePath(world.transform, "Environment"), "Room", "Lighting");
             Transform sink = RequirePath(world.transform, "Sink");
-            AssertChildren(sink, "Floor", "Walls", "Rim", "Counter", "Cabinet", "Drain", "Faucet");
+            AssertChildren(sink, "Floor", "Walls", "Rim", "Counter", "Cabinet", "Drain", "Faucet", "Rounded corners");
             AssertPrefabSource(RequirePath(world.transform, "Player"), "Player/Player.prefab");
             AssertPrefabSource(sink, "Sink/Sink.prefab");
+            AssertPrefabSource(RequirePath(sink, "Rounded corners"), "Sink/Parts/RoundedBasinCorners.prefab");
 
             Transform walls = RequirePath(sink, "Walls");
             Assert.That(walls.childCount, Is.EqualTo(4));
             foreach (Transform wall in walls)
+            {
                 AssertPrefabSource(wall, "Sink/Parts/SinkWall.prefab");
+            }
 
             Transform foodGroup = RequirePath(world.transform, "Mess/Food");
             Assert.That(foodGroup.childCount, Is.EqualTo(8));
@@ -100,10 +103,15 @@ namespace SinkLab.Tests
             }
             Transform stains = RequirePath(world.transform, "Mess/Stains");
             Assert.That(stains.childCount, Is.EqualTo(6));
-            foreach (Transform stain in stains) AssertPrefabSource(stain, "Mess/Stain.prefab");
+            foreach (Transform stain in stains)
+            {
+                AssertPrefabSource(stain, "Mess/Stain.prefab");
+            }
 
             foreach (string group in new[] { "Floor", "Rim", "Counter", "Cabinet", "Drain", "Faucet" })
+            {
                 Assert.That(RequirePath(sink, group).childCount, Is.GreaterThan(0), group + " must contain its parts.");
+            }
             Assert.That(RequirePath(world.transform, "Environment/Room").childCount, Is.GreaterThan(0));
             Assert.That(RequirePath(world.transform, "Environment/Lighting").childCount, Is.GreaterThan(0));
         }

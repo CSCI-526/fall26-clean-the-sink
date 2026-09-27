@@ -49,11 +49,23 @@ namespace SinkLab
         void Awake()
         {
             RefreshLevelReferences();
-            if (!Application.isPlaying) return;
-            if (basin == null) basin = GetComponent<BasinWater>();
-            if (basin == null) basin = gameObject.AddComponent<BasinWater>();
+
+            if (!Application.isPlaying)
+            {
+                return;
+            }
+
+            if (basin == null)
+            {
+                basin = GetComponent<BasinWater>();
+            }
+
+            if (basin == null)
+            {
+                basin = gameObject.AddComponent<BasinWater>();
+            }
+
             basin.Configure(this);
-            if (sink != null) BasinRounding.Apply(sink);
         }
 
         /// <summary>

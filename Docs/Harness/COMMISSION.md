@@ -29,6 +29,7 @@ Replace placeholders, remove irrelevant sections, and keep one source of truth.
 - **Files/assets:** Paths the user or next agent should inspect.
 - **Checks actually run:** Command/suite, completed result, evidence path and relevant version/revision.
 - **Visible evidence:** Actual engine render and what was inspected, if appearance changed.
+- **Maintainer review (source changes):** Readability checks completed, behavior/serialization preserved during cleanup, and relevant remaining debt.
 - **Not established:** Unrun checks, coverage gaps, intentional skips or remaining limits.
 - **Final state:** Saved target, Play mode, temporary settings restored, any outstanding work.
 - **Harness update:** Only a new user decision or reproduced recurring failure that warrants a changed check/rule.
@@ -40,3 +41,4 @@ Replace placeholders, remove irrelevant sections, and keep one source of truth.
 3. Do saved assets and actual player interaction behave as claimed?
 4. Are relevant failures ruled out by meaningful checks, including uncovered visual requirements?
 5. Does the handoff distinguish current evidence from historical evidence and avoid overstating completion?
+6. Can a returning engineer understand the changed code without the chat, following CODING_CONVENTIONS.md?
