@@ -19,8 +19,11 @@ namespace SinkLab.Tests
         public void SetUp()
         {
             for (int i = 0; i < SceneManager.sceneCount; i++)
+            {
                 Assert.That(SceneManager.GetSceneAt(i).isDirty, Is.False,
                     "Save loaded scenes before running the prefab architecture tests.");
+            }
+
             previousScenes = EditorSceneManager.GetSceneManagerSetup();
             previousCursorLock = Cursor.lockState;
             previousCursorVisible = Cursor.visible;
@@ -40,7 +43,11 @@ namespace SinkLab.Tests
         [TearDown]
         public void TearDown()
         {
-            if (!restoreEnvironment) return;
+            if (!restoreEnvironment)
+            {
+                return;
+            }
+
             try
             {
                 // Discard only the test instances; never apply overrides or save assets.
@@ -48,7 +55,9 @@ namespace SinkLab.Tests
                 FoodScrap.Active.RemoveWhere(item => item == null);
                 StainPatch.Active.RemoveWhere(item => item == null);
                 if (previousScenes != null && previousScenes.Length > 0)
+                {
                     EditorSceneManager.RestoreSceneManagerSetup(previousScenes);
+                }
             }
             finally
             {
@@ -61,7 +70,8 @@ namespace SinkLab.Tests
         [Test]
         public void ReusablePartsAndLevelExistAsPrefabAssets()
         {
-            string[] required = {
+            string[] required =
+            {
                 "Player/Player.prefab", "Sink/Sink.prefab", "Sink/Parts/SinkWall.prefab",
                 "Mess/FoodCube.prefab", "Mess/FoodSphere.prefab", "Mess/Stain.prefab",
                 "Levels/SinkLevel.prefab"
@@ -70,7 +80,8 @@ namespace SinkLab.Tests
             {
                 GameObject asset = EditModePrefabFactory.Load(path);
                 Assert.That(PrefabUtility.IsPartOfPrefabAsset(asset), Is.True, path);
-                Assert.That(PrefabUtility.GetPrefabAssetType(asset), Is.Not.EqualTo(PrefabAssetType.MissingAsset), path);
+                Assert.That(PrefabUtility.GetPrefabAssetType(asset),
+                    Is.Not.EqualTo(PrefabAssetType.MissingAsset), path);
             }
         }
 
@@ -124,7 +135,9 @@ namespace SinkLab.Tests
                 Assert.That(PrefabUtility.GetPrefabInstanceStatus(item.gameObject),
                     Is.Not.EqualTo(PrefabInstanceStatus.MissingAsset), item.name);
                 foreach (Component component in item.GetComponents<Component>())
+                {
                     Assert.That(component, Is.Not.Null, "Missing script on " + item.name);
+                }
             }
         }
 
@@ -203,8 +216,14 @@ namespace SinkLab.Tests
 
             Assert.That(world.FoodRemaining, Is.EqualTo(foodBefore + 1));
             Assert.That(world.StainsRemaining, Is.EqualTo(stainsBefore + 1));
-            foreach (FoodScrap food in nested.foods) Assert.That(world.foods.Contains(food), Is.False);
-            foreach (StainPatch stain in nested.stains) Assert.That(world.stains.Contains(stain), Is.False);
+            foreach (FoodScrap food in nested.foods)
+            {
+                Assert.That(world.foods.Contains(food), Is.False);
+            }
+            foreach (StainPatch stain in nested.stains)
+            {
+                Assert.That(world.stains.Contains(stain), Is.False);
+            }
             Assert.That(world.player.world, Is.EqualTo(world));
             Assert.That(nested.player.world, Is.EqualTo(nested));
             Assert.That(world.player, Is.Not.EqualTo(nested.player));
@@ -216,7 +235,8 @@ namespace SinkLab.Tests
         [Test]
         public void SharedWallColliderAndPlayerSpeedRemainInheritedFromTheirPartAssets()
         {
-            BoxCollider sourceWall = EditModePrefabFactory.Load("Sink/Parts/SinkWall.prefab").GetComponent<BoxCollider>();
+            BoxCollider sourceWall = EditModePrefabFactory.Load("Sink/Parts/SinkWall.prefab")
+                .GetComponent<BoxCollider>();
             Assert.That(sourceWall, Is.Not.Null);
             foreach (Transform wall in RequirePath(world.transform, "Sink/Walls"))
             {
@@ -252,7 +272,8 @@ namespace SinkLab.Tests
 
         static void AssertPrefabSource(Transform instance, string relativePath)
         {
-            Assert.That(PrefabUtility.GetPrefabInstanceStatus(instance.gameObject), Is.EqualTo(PrefabInstanceStatus.Connected), instance.name);
+            Assert.That(PrefabUtility.GetPrefabInstanceStatus(instance.gameObject),
+                Is.EqualTo(PrefabInstanceStatus.Connected), instance.name);
             Assert.That(PrefabUtility.GetPrefabAssetPathOfNearestInstanceRoot(instance.gameObject),
                 Is.EqualTo(EditModePrefabFactory.Root + relativePath), instance.name);
         }

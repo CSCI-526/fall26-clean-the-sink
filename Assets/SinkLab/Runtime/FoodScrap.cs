@@ -32,35 +32,72 @@ namespace SinkLab
 
         void Start()
         {
-            if (!hasSpawn) CaptureSpawn();
+            if (!hasSpawn)
+            {
+                CaptureSpawn();
+            }
         }
 
         public void CaptureSpawn()
         {
-            if (Body == null) Body = GetComponent<Rigidbody>();
+            if (Body == null)
+            {
+                Body = GetComponent<Rigidbody>();
+            }
+
             spawnPosition = transform.position;
             spawnRotation = transform.rotation;
             spawnKinematic = Body.isKinematic;
             spawnGravity = Body.useGravity;
+
             renderers = GetComponentsInChildren<Renderer>(true);
             colliders = GetComponentsInChildren<Collider>(true);
             rendererStates = new bool[renderers.Length];
             colliderStates = new bool[colliders.Length];
-            for (int i = 0; i < renderers.Length; i++) rendererStates[i] = renderers[i].enabled;
-            for (int i = 0; i < colliders.Length; i++) colliderStates[i] = colliders[i].enabled;
+            for (int i = 0; i < renderers.Length; i++)
+            {
+                rendererStates[i] = renderers[i].enabled;
+            }
+
+            for (int i = 0; i < colliders.Length; i++)
+            {
+                colliderStates[i] = colliders[i].enabled;
+            }
+
             hasSpawn = true;
         }
 
         internal void MarkDrained()
         {
-            if (IsDrained) return;
-            if (!hasSpawn) CaptureSpawn();
+            if (IsDrained)
+            {
+                return;
+            }
+
+            if (!hasSpawn)
+            {
+                CaptureSpawn();
+            }
+
             IsDrained = true;
             Body.linearVelocity = Vector3.zero;
             Body.angularVelocity = Vector3.zero;
             Body.isKinematic = true;
-            foreach (Renderer item in renderers) if (item != null) item.enabled = false;
-            foreach (Collider item in colliders) if (item != null) item.enabled = false;
+            foreach (Renderer item in renderers)
+            {
+                if (item != null)
+                {
+                    item.enabled = false;
+                }
+            }
+
+            foreach (Collider item in colliders)
+            {
+                if (item != null)
+                {
+                    item.enabled = false;
+                }
+            }
         }
 
         /// <summary>The scrap the audit should keep pushing.</summary>
@@ -68,7 +105,11 @@ namespace SinkLab
 
         public void ResetScrap()
         {
-            if (!hasSpawn) CaptureSpawn();
+            if (!hasSpawn)
+            {
+                CaptureSpawn();
+            }
+
             IsDrained = false;
             gameObject.SetActive(true);
             Body.isKinematic = false;
@@ -79,21 +120,45 @@ namespace SinkLab
             transform.SetPositionAndRotation(spawnPosition, spawnRotation);
             Body.useGravity = spawnGravity;
             Body.isKinematic = spawnKinematic;
+
             for (int i = 0; i < renderers.Length; i++)
-                if (renderers[i] != null) renderers[i].enabled = rendererStates[i];
+            {
+                if (renderers[i] != null)
+                {
+                    renderers[i].enabled = rendererStates[i];
+                }
+            }
+
             for (int i = 0; i < colliders.Length; i++)
-                if (colliders[i] != null) colliders[i].enabled = colliderStates[i];
-            if (!Body.isKinematic) Body.WakeUp();
+            {
+                if (colliders[i] != null)
+                {
+                    colliders[i].enabled = colliderStates[i];
+                }
+            }
+
+            if (!Body.isKinematic)
+            {
+                Body.WakeUp();
+            }
         }
 
         public Vector3 ClosestPoint(Vector3 position)
         {
-            if (colliders == null) colliders = GetComponentsInChildren<Collider>();
+            if (colliders == null)
+            {
+                colliders = GetComponentsInChildren<Collider>();
+            }
+
             Vector3 closest = Body != null ? Body.worldCenterOfMass : transform.position;
             float distance = float.PositiveInfinity;
             foreach (Collider item in colliders)
             {
-                if (item == null || !item.enabled || item.isTrigger) continue;
+                if (item == null || !item.enabled || item.isTrigger)
+                {
+                    continue;
+                }
+
                 Vector3 point = item.ClosestPoint(position);
                 float candidate = (position - point).sqrMagnitude;
                 if (candidate < distance)
@@ -102,6 +167,7 @@ namespace SinkLab
                     closest = point;
                 }
             }
+
             return closest;
         }
     }

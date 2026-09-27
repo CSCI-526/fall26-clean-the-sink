@@ -6,7 +6,9 @@ using UnityEngine.TestTools;
 
 namespace SinkLab.Tests
 {
-    /// <summary>Exercises standing water on real level prefabs, independently of player input and jet impulses.</summary>
+    /// <summary>
+    /// Exercises standing water on real level prefabs, independently of player input and jet impulses.
+    /// </summary>
     public sealed class WaterMechanicsPlayModeTests
     {
         readonly List<GameObject> _suspendedWorlds = new List<GameObject>();
@@ -219,7 +221,8 @@ namespace SinkLab.Tests
             while (_baselineWorld.basin.NormalizedLevel < targetLevel ||
                    _raisedWorld.basin.NormalizedLevel < targetLevel)
             {
-                Assert.That(Time.time, Is.LessThan(deadlineSeconds), "The plugged basins must fill through pump input.");
+                Assert.That(Time.time, Is.LessThan(deadlineSeconds),
+                    "The plugged basins must fill through pump input.");
                 yield return new WaitForFixedUpdate();
             }
 

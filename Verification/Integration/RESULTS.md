@@ -7,7 +7,9 @@ Unity: 6000.3.22f1. Scene: `Assets/SinkLab/Scenes/SinkLab.unity`.
 
 Integrated local `main` (`fa77df4`) into local `zhanli` (`9fa0cd4`) in merge
 commit `078c702`; neither original branch was moved. Remote freshness was not
-verified. Implementation changes remain reviewable in the working tree.
+verified. This report records the integration baseline later committed as `b6330b7`;
+see [the subsequent formatting verification](../Formatting/RESULTS.md) for the
+readability cleanup and main-branch handoff.
 
 - Retained main's one continuous hollow drain rim.
 - Saved the shallow rounded basin, circular opening and plug into reusable prefabs.
@@ -87,4 +89,6 @@ Scoped saved-file hashes are recorded in `verified-assets.sha256`.
 This prototype does not establish arbitrary sink scale/tilt or simultaneous-player
 support. Native collision tests establish conditional rebound at hard impact; a
 human playtest is still needed to judge preferred bounce strength and difficulty.
-No standalone player build, push, or merge into the original main branch was requested.
+No standalone player build, push, or merge into the original main branch was requested
+at the time of this baseline run. The subsequent formatting commission authorizes
+the main-branch merge; its report records that outcome separately.

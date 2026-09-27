@@ -15,7 +15,11 @@ namespace SinkLab
 
         public void Track(Object asset)
         {
-            if (asset == null) return;
+            if (asset == null)
+            {
+                return;
+            }
+
             asset.hideFlags = HideFlags.DontSave;
             generated.Add(asset);
         }
@@ -25,9 +29,19 @@ namespace SinkLab
             for (int i = 0; i < generated.Count; i++)
             {
                 Object asset = generated[i];
-                if (asset == null) continue;
-                if (Application.isPlaying) Destroy(asset);
-                else DestroyImmediate(asset);
+                if (asset == null)
+                {
+                    continue;
+                }
+
+                if (Application.isPlaying)
+                {
+                    Destroy(asset);
+                }
+                else
+                {
+                    DestroyImmediate(asset);
+                }
             }
         }
     }
@@ -41,6 +55,7 @@ namespace SinkLab
         const float FloorThickness = 0.12f;
         const float WallThickness = 0.12f;
         const float RimBottom = 0.965f;
+
         // The corner rim continues the same inner wall surface above this height.
         const float CornerWallHeight = RimBottom - FloorTop;
         const float RimHeight = 0.07f;
@@ -66,6 +81,7 @@ namespace SinkLab
             {
                 return;
             }
+
             if (state == null)
             {
                 state = sink.gameObject.AddComponent<BasinCorners>();
@@ -77,8 +93,10 @@ namespace SinkLab
                 {
                     return;
                 }
+
                 state.shaped = true;
             }
+
             if (root.Find("Rounded corners") == null)
             {
                 BuildCorners(root, state);
@@ -109,7 +127,11 @@ namespace SinkLab
         static bool SetAxis(Transform sink, string path, int axis, float size)
         {
             Transform piece = sink.Find(path);
-            if (piece == null) return false;
+            if (piece == null)
+            {
+                return false;
+            }
+
             Vector3 scale = piece.localScale;
             scale[axis] = size;
             piece.localScale = scale;
@@ -182,12 +204,15 @@ namespace SinkLab
             {
                 boxCollider.contactOffset = 0.001f;
             }
+
             Renderer renderer = box.GetComponent<Renderer>();
             renderer.sharedMaterial = material;
             renderer.shadowCastingMode = ShadowCastingMode.Off;
         }
 
-        static void Place(Transform parent, string name, Material material, Mesh mesh, Vector3 localPosition, BasinCorners state, bool convex = false)
+        static void Place(
+            Transform parent, string name, Material material, Mesh mesh, Vector3 localPosition,
+            BasinCorners state, bool convex = false)
         {
             state.Track(mesh);
             var go = new GameObject(name);
@@ -206,18 +231,38 @@ namespace SinkLab
 
         static Material DoubleSided(Material source)
         {
-            if (source == null) return null;
+            if (source == null)
+            {
+                return null;
+            }
+
             Material copy = new Material(source) { name = source.name + " rounded" };
             copy.hideFlags = HideFlags.DontSave;
-            if (copy.HasProperty("_Cull")) copy.SetInt("_Cull", (int)CullMode.Off);
+            if (copy.HasProperty("_Cull"))
+            {
+                copy.SetInt("_Cull", (int)CullMode.Off);
+            }
+
             return copy;
         }
 
         static float StartAngle(float sx, float sz)
         {
-            if (sx < 0f && sz < 0f) return Mathf.PI;
-            if (sx > 0f && sz < 0f) return -Mathf.PI * 0.5f;
-            if (sx > 0f && sz > 0f) return 0f;
+            if (sx < 0f && sz < 0f)
+            {
+                return Mathf.PI;
+            }
+
+            if (sx > 0f && sz < 0f)
+            {
+                return -Mathf.PI * 0.5f;
+            }
+
+            if (sx > 0f && sz > 0f)
+            {
+                return 0f;
+            }
+
             return Mathf.PI * 0.5f;
         }
 
@@ -375,6 +420,7 @@ namespace SinkLab
                 colors.Add(Color.white);
                 colors.Add(Color.white);
             }
+
             vertices.Add(new Vector3(0f, height, 0f));
             uvs.Add(new Vector2(0.5f, 0.5f));
             colors.Add(Color.white);
@@ -408,8 +454,12 @@ namespace SinkLab
 
         static void AddQuad(List<int> triangles, int a, int b, int c, int d)
         {
-            triangles.Add(a); triangles.Add(b); triangles.Add(c);
-            triangles.Add(a); triangles.Add(c); triangles.Add(d);
+            triangles.Add(a);
+            triangles.Add(b);
+            triangles.Add(c);
+            triangles.Add(a);
+            triangles.Add(c);
+            triangles.Add(d);
         }
 
         static Mesh Finish(List<Vector3> vertices, List<int> triangles, string name)

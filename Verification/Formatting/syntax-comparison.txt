@@ -1,0 +1,31 @@
+Baseline: b6330b7
+Compares Roslyn syntax after normalizing control-flow braces and split declarations.
+
+EQUIVALENT Assets/SinkLab/Runtime/WaterJet.cs
+EQUIVALENT Assets/SinkLab/Runtime/BasinRounding.cs
+EQUIVALENT Assets/SinkLab/Runtime/SinkGameplayAudit.cs
+EQUIVALENT Assets/SinkLab/Runtime/WaterVisuals.cs
+EQUIVALENT Assets/SinkLab/Runtime/SinkWorld.cs
+EQUIVALENT Assets/SinkLab/Runtime/Drain.cs
+EQUIVALENT Assets/SinkLab/Runtime/StainPatch.cs
+REVIEW Assets/SinkLab/Runtime/SinkPlayer.cs
+EQUIVALENT Assets/SinkLab/Runtime/BasinWater.cs
+EQUIVALENT Assets/SinkLab/Runtime/FoodScrap.cs
+EQUIVALENT Assets/SinkLab/Runtime/SinkAssembly.cs
+REVIEW Assets/SinkLab/Runtime/SinkHUD.cs
+EQUIVALENT Assets/SinkLab/Editor/SinkPrefabMigration.cs
+EQUIVALENT Assets/SinkLab/Editor/SinkGeometryAuthoring.cs
+EQUIVALENT Assets/SinkLab/Editor/SinkSceneBuilder.cs
+EQUIVALENT Assets/SinkLab/Tests/PlayMode/WallInteractionPlayModeTests.cs
+EQUIVALENT Assets/SinkLab/Tests/PlayMode/WaterMechanicsPlayModeTests.cs
+EQUIVALENT Assets/SinkLab/Tests/PlayMode/PlayModePrefabFactory.cs
+EQUIVALENT Assets/SinkLab/Tests/PlayMode/ControlsPlayModeTests.cs
+EQUIVALENT Assets/SinkLab/Tests/EditMode/WaterOcclusionRegressionTests.cs
+EQUIVALENT Assets/SinkLab/Tests/EditMode/SavedBasinGeometryTests.cs
+EQUIVALENT Assets/SinkLab/Tests/EditMode/PrefabArchitectureTests.cs
+EQUIVALENT Assets/SinkLab/Tests/EditMode/EditModePrefabFactory.cs
+EQUIVALENT Assets/SinkLab/Tests/EditMode/SavedSceneContractTests.cs
+EQUIVALENT Assets/SinkLab/Tests/EditMode/SinkContractTests.cs
+EQUIVALENT Tools/Geometry/ReplaceDrainRim.cs
+
+SinkPlayer and SinkHUD contain reviewed helper extractions; their order was checked separately.
