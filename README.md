@@ -116,25 +116,3 @@ Unity Test Runner assemblies:
 `Assets/SinkLab/Runtime/SinkGameplayAudit.cs` is an editor-only complete-playthrough driver. It walks the same controller, aims the same camera, and switches the same faucet. It never applies forces to food or directly cleans/collects anything. Use `Sink Lab > Run complete gameplay audit` to start it. It writes its observations and scene captures under `Verification`.
 
 Executed results and captures live in `Verification`. Check each report's date and scope; historical passes and screenshots do not verify later changes.
-
-## Agent commissions
-
-Start future agent work with [the project harness](Docs/Harness/README.md). Root
-[AGENTS.md](AGENTS.md) supplies the mandatory rules; the harness organizes the
-experience contract, prefab authoring standards, CLI recovery, verification by
-change scope, past failure lessons, and a reusable commission brief.
-
-Use `./Tools/harness check --json` for offline integrity checks and
-`./Tools/harness preflight --json` for live Editor readiness (host access required
-in Codex). Neither command changes the game or substitutes for the selected
-commission's gameplay/visual checks.
-
-## Unity CLI
-
-Install the [official Unity CLI](https://docs.unity.com/en-us/unity-cli/use-unity-cli) once per computer; the same installation works across projects and Editor versions. Controlling a running Editor requires Unity 6.0 LTS or later and the Unity Pipeline package (`com.unity.pipeline`) in each project. This project's `Packages/manifest.json` already includes Pipeline.
-
-With this project open in Unity, use `./Tools/unity status --format json` from the project directory to check its connection, or `./Tools/unity command --format json` to list available Editor commands. This checked launcher requires Python 3 and forwards arguments to the installed Unity CLI. In Codex, run it with `sandbox_permissions: "require_escalated"` so the CLI can inspect host processes and reach the local Editor.
-
-The installed CLI can mistake a sandbox-denied process check for a dead Editor and delete its discovery file. The launcher refuses to start the CLI when process inspection is blocked, preserving the connection. Do not bypass it with a raw sandboxed `unity` invocation. See [AGENTS.md](AGENTS.md) for the project workflow and [the diagnostic results](Verification/CliReliability/RESULTS.md) for the reproduction and validation.
-
-For another project, add Pipeline with `./Tools/unity pipeline install --project-path "/path/to/project"`, then let Unity finish importing.
