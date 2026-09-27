@@ -1,0 +1,37 @@
+{
+  "success": true,
+  "command": "command eval_file",
+  "data": {
+    "command": "eval_file",
+    "parameters": {
+      "file": "/Users/lilyxu/Desktop/water gun experiment project/Tools/Geometry/ReplaceDrainRim.cs",
+      "format": "json"
+    },
+    "result": {
+      "output": null,
+      "diagnostics": [],
+      "success": true,
+      "result": {
+        "changed": "Assets/SinkLab/Prefabs/Sink/Parts/Drain.prefab",
+        "ringPrefab": "Assets/SinkLab/Prefabs/Sink/Parts/DrainRim.prefab",
+        "mesh": "Assets/SinkLab/Meshes/DrainRim.asset",
+        "removedLipObjects": 24,
+        "ringObjects": 1,
+        "segments": 96,
+        "vertices": 1552,
+        "triangles": 1536,
+        "innerRadius": 0.2945,
+        "outerRadius": 0.3218,
+        "colliderAdded": false
+      }
+    },
+    "target": {
+      "host": "127.0.0.1",
+      "port": 7800,
+      "projectPath": "/Users/lilyxu/Desktop/water gun experiment project"
+    },
+    "success": true
+  },
+  "errors": [],
+  "warnings": []
+}

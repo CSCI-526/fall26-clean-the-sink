@@ -74,7 +74,7 @@ Sink Level                         [Levels/SinkLevel.prefab]
 │   ├── Rim                        [4 SinkRim instances]
 │   ├── Counter                    [4 CounterPanel instances]
 │   ├── Cabinet                    [4 CabinetPanel instances]
-│   ├── Drain                      [Parts/Drain.prefab]
+│   ├── Drain                      [Parts/Drain.prefab; one nested DrainRim mesh]
 │   └── Faucet                     [Parts/Faucet.prefab]
 ├── Mess
 │   ├── Food                       [FoodCube / FoodSphere instances]
@@ -84,7 +84,7 @@ Sink Level                         [Levels/SinkLevel.prefab]
     └── Lighting                   [Lighting.prefab]
 ```
 
-All 17 reusable prefabs are under `Assets/SinkLab/Prefabs`. Open a part prefab to edit shared behavior or appearance; its connected instances inherit the change. Open `Sink.prefab` to arrange its pieces together. Select its parent to move the entire sink, or a subgroup such as `Walls` to manipulate those pieces together. Keep assembly/group scales at one; size the individual panels. Food spheres use uniform scale to match their colliders.
+All 18 reusable prefabs are under `Assets/SinkLab/Prefabs`. The drain rim is a single hollow annular mesh in `Meshes/DrainRim.asset`, nested through `Sink/Parts/DrainRim.prefab`; it has no individual lip objects. Open a part prefab to edit shared behavior or appearance; its connected instances inherit the change. Open `Sink.prefab` to arrange its pieces together. Select its parent to move the entire sink, or a subgroup such as `Walls` to manipulate those pieces together. Keep assembly/group scales at one; size the individual panels. Food spheres use uniform scale to match their colliders.
 
 Food placements vary color and mass using deliberate instance overrides; stain placements vary size and rotation. Other common behavior stays inherited. Use a prefab variant for a reusable alternative instead of unpacking it. Instance overrides take precedence over future changes to those specific properties on the source prefab.
 
@@ -105,8 +105,24 @@ Unity Test Runner assemblies:
 
 The latest executed results and captures live in `Verification`.
 
+## Agent commissions
+
+Start future agent work with [the project harness](Docs/Harness/README.md). Root
+[AGENTS.md](AGENTS.md) supplies the mandatory rules; the harness organizes the
+experience contract, prefab authoring standards, CLI recovery, verification by
+change scope, past failure lessons, and a reusable commission brief.
+
+Use `./Tools/harness check --json` for offline integrity checks and
+`./Tools/harness preflight --json` for live Editor readiness (host access required
+in Codex). Neither command changes the game or substitutes for the selected
+commission's gameplay/visual checks.
+
 ## Unity CLI
 
 Install the [official Unity CLI](https://docs.unity.com/en-us/unity-cli/use-unity-cli) once per computer; the same installation works across projects and Editor versions. Controlling a running Editor requires Unity 6.0 LTS or later and the Unity Pipeline package (`com.unity.pipeline`) in each project. This project's `Packages/manifest.json` already includes Pipeline.
 
-With this project open in Unity, run `unity status` from the project directory to check its connection, or `unity command` to list available Editor commands. For another project, add Pipeline with `unity pipeline install --project-path "/path/to/project"`, then let Unity finish importing.
+With this project open in Unity, use `./Tools/unity status --format json` from the project directory to check its connection, or `./Tools/unity command --format json` to list available Editor commands. This checked launcher requires Python 3 and forwards arguments to the installed Unity CLI. In Codex, run it with `sandbox_permissions: "require_escalated"` so the CLI can inspect host processes and reach the local Editor.
+
+The installed CLI can mistake a sandbox-denied process check for a dead Editor and delete its discovery file. The launcher refuses to start the CLI when process inspection is blocked, preserving the connection. Do not bypass it with a raw sandboxed `unity` invocation. See [AGENTS.md](AGENTS.md) for the project workflow and [the diagnostic results](Verification/CliReliability/RESULTS.md) for the reproduction and validation.
+
+For another project, add Pipeline with `./Tools/unity pipeline install --project-path "/path/to/project"`, then let Unity finish importing.

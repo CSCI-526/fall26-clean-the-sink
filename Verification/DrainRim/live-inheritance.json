@@ -1,0 +1,38 @@
+{
+  "success": true,
+  "command": "command eval",
+  "data": {
+    "command": "eval",
+    "parameters": {
+      "code": "var w=UnityEngine.Object.FindFirstObjectByType<SinkLab.SinkWorld>();var d=w.drain;var ring=d.transform.Find(\"Rim\");if(!ring)throw new Exception(\"The live level did not inherit the new rim.\");Selection.activeGameObject=ring.gameObject;EditorGUIUtility.PingObject(ring.gameObject);if(SceneView.lastActiveSceneView)SceneView.lastActiveSceneView.LookAt(d.transform.position+Vector3.up*.005f,Quaternion.Euler(68,0,0),.85f,false,true);return new {scene=UnityEngine.SceneManagement.SceneManager.GetActiveScene().path,dirty=UnityEngine.SceneManagement.SceneManager.GetActiveScene().isDirty,children=d.transform.Cast<Transform>().Select(t=>t.name).ToArray(),source=PrefabUtility.GetPrefabAssetPathOfNearestInstanceRoot(ring.gameObject),renderers=ring.GetComponentsInChildren<Renderer>().Length,colliders=ring.GetComponentsInChildren<Collider>().Length,mesh=ring.GetComponent<MeshFilter>().sharedMesh.name,radius=d.radius,depth=d.captureDepth};",
+      "format": "json"
+    },
+    "result": {
+      "output": null,
+      "diagnostics": [],
+      "success": true,
+      "result": {
+        "scene": "Assets/SinkLab/Scenes/SinkLab.unity",
+        "dirty": false,
+        "children": [
+          "Dark drain interior",
+          "Rim"
+        ],
+        "source": "Assets/SinkLab/Prefabs/Sink/Parts/DrainRim.prefab",
+        "renderers": 1,
+        "colliders": 0,
+        "mesh": "DrainRim",
+        "radius": 0.28,
+        "depth": 0.07
+      }
+    },
+    "target": {
+      "host": "127.0.0.1",
+      "port": 7800,
+      "projectPath": "/Users/lilyxu/Desktop/water gun experiment project"
+    },
+    "success": true
+  },
+  "errors": [],
+  "warnings": []
+}

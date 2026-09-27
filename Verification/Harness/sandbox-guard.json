@@ -1,0 +1,6 @@
+{
+  "expected_exit": 77,
+  "actual_exit": 77,
+  "blocked_before_cli": true,
+  "descriptor_preserved": true
+}

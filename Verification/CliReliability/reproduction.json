@@ -1,0 +1,36 @@
+{
+  "environment": {
+    "platform": "macOS",
+    "unity_cli": "1.0.0-beta.5",
+    "pipeline": "0.7.0-exp.1",
+    "editor": "6000.3.22f1"
+  },
+  "process_probe": {
+    "pid": 732,
+    "sandbox_signal_zero": "EPERM",
+    "sandbox_ps": "EPERM",
+    "host_signal_zero": "alive",
+    "host_ps": "Unity Editor"
+  },
+  "disposable_descriptor_probe": {
+    "uses_real_credentials": false,
+    "uses_live_descriptor": false,
+    "sandbox_fresh": {
+      "descriptor_retained": false,
+      "cli_exit": 6,
+      "message": "No Pipeline instance found for project"
+    },
+    "host_fresh": {
+      "descriptor_retained": true,
+      "cli_exit": 6,
+      "message": "Cannot connect to Unity Editor Pipeline server at 127.0.0.1:1"
+    },
+    "host_one_hour_old_heartbeat": {
+      "descriptor_retained": true,
+      "cli_exit": 6,
+      "message": "Cannot connect to Unity Editor Pipeline server at 127.0.0.1:1"
+    }
+  },
+  "cause": "Restricted process inspection is misclassified as a dead Editor; CLI discovery deletes the descriptor.",
+  "fix": "Use Tools/unity with host process visibility. Wrapper refuses restricted execution before launching the CLI."
+}

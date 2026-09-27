@@ -48,3 +48,7 @@ node_modules/
 ._*
 Thumbs.db
 Desktop.ini
+
+# Python-based local harness tools.
+__pycache__/
+*.py[cod]

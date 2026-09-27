@@ -1,0 +1,263 @@
+#!/usr/bin/env python3
+"""Read-only project checks. This script never launches the raw Unity CLI."""
+
+import argparse
+import json
+import os
+from pathlib import Path
+import re
+import subprocess
+import sys
+
+ROOT = Path(__file__).resolve().parent.parent
+CORE = (
+    "Tools/unity", "Packages/manifest.json", "ProjectSettings/ProjectVersion.txt",
+    "Assets/SinkLab/Scenes/SinkLab.unity", "Assets/SinkLab/Runtime/SinkWorld.cs",
+    "Assets/SinkLab/Runtime/SinkAssembly.cs",
+)
+PREFABS = (
+    "Player/Player", "Sink/Sink", "Sink/Parts/SinkWall", "Sink/Parts/Drain",
+    "Sink/Parts/DrainRim", "Mess/FoodCube", "Mess/FoodSphere", "Mess/Stain",
+    "Levels/SinkLevel",
+)
+ASSEMBLIES = {
+    "Runtime/SinkLab.Runtime.asmdef": "SinkLab.Runtime",
+    "Editor/SinkLab.Editor.asmdef": "SinkLab.Editor",
+    "Tests/EditMode/SinkLab.EditModeTests.asmdef": "SinkLab.EditModeTests",
+    "Tests/PlayMode/SinkLab.PlayModeTests.asmdef": "SinkLab.PlayModeTests",
+}
+
+
+def fields(value):
+    return {key.lower(): item for key, item in value.items()} if isinstance(value, dict) else {}
+
+
+def layers(value, location="$", depth=0):
+    """Follow envelope data/result wrappers, including test_status's JSON string."""
+    if depth > 30:
+        raise ValueError("Result wrappers exceed the supported depth")
+    if isinstance(value, str):
+        try:
+            value = json.loads(value)
+        except ValueError:
+            return
+    if not isinstance(value, dict):
+        return
+    yield location, fields(value)
+    for key, item in value.items():
+        if key.lower() in ("data", "result"):
+            yield from layers(item, location + "." + key, depth + 1)
+
+
+def validate_result(payload, tests=False):
+    failures = []
+    if fields(payload).get("success") is not True:
+        failures.append("$.success must be true")
+    try:
+        nodes = list(layers(payload))
+    except ValueError as error:
+        return failures + [str(error)]
+    for location, node in nodes:
+        if "success" in node and node["success"] is not True:
+            message = location + ".success must be true"
+            if message not in failures:
+                failures.append(message)
+        if node.get("errors"):
+            failures.append(location + ".errors is not empty")
+    if tests:
+        summaries = [(loc, node) for loc, node in nodes if "summary" in node]
+        if not summaries:
+            failures.append("No completed test summary found in data/result wrappers")
+        for location, node in summaries:
+            if str(node.get("status", "")).lower() != "completed":
+                failures.append(location + ".status must be completed")
+            summary = fields(node["summary"])
+            names = ("total", "passed", "failed", "skipped", "inconclusive")
+            if any(type(summary.get(key)) is not int or summary[key] < 0 for key in names):
+                failures.append(location + ".summary requires nonnegative integer test counts")
+                continue
+            if summary["total"] == 0 or summary["passed"] != summary["total"]:
+                failures.append(location + ".summary requires total > 0 and passed == total")
+            if any(summary[key] != 0 for key in ("failed", "skipped", "inconclusive")):
+                failures.append(location + ".summary contains failed, skipped, or inconclusive tests")
+            if "results" in node:
+                results = node["results"]
+                if not isinstance(results, list) or len(results) != summary["total"]:
+                    failures.append(location + ".results does not match the summary total")
+                elif any(str(fields(item).get("status", "")).lower() != "passed" for item in results):
+                    failures.append(location + ".results contains an outcome other than Passed")
+    return failures
+
+
+def load_json(path, failures, label):
+    try:
+        return json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, ValueError) as error:
+        failures.append(label + ": cannot read valid JSON (" + type(error).__name__ + ")")
+        return None
+
+
+def asset_checks(root):
+    failures, guids = [], {}
+    base = root / "Assets/SinkLab"
+    if not base.is_dir():
+        return ["Missing directory: Assets/SinkLab"]
+    assets = [base]
+    for directory, subdirs, files in os.walk(base, followlinks=False):
+        subdirs[:] = sorted(d for d in subdirs if not d.startswith(".") and not (Path(directory) / d).is_symlink())
+        assets.extend(Path(directory) / name for name in subdirs)
+        assets.extend(Path(directory) / name for name in sorted(files) if not name.startswith("."))
+    metas = [Path(str(base) + ".meta")]
+    for asset in assets:
+        relative = str(asset.relative_to(root))
+        if asset.is_symlink():
+            failures.append("Unexpected asset symlink (not followed): " + relative)
+            continue
+        if asset.suffix == ".meta":
+            metas.append(asset)
+            if not Path(str(asset)[:-5]).exists():
+                failures.append("Orphan meta: " + relative)
+        elif not Path(str(asset) + ".meta").is_file():
+            failures.append("Missing meta: " + relative + ".meta")
+        if asset.suffix.lower() == ".physicsmaterial":
+            failures.append("Wrong physics material extension: " + relative + " (use Unity's .physicMaterial)")
+        if asset.suffix == ".asmdef":
+            data = load_json(asset, failures, relative)
+            if data is not None and not isinstance(fields(data).get("name"), str):
+                failures.append("Assembly definition needs a name: " + relative)
+    for meta in metas:
+        if not meta.is_file():
+            continue  # Missing root meta was reported with its asset.
+        label = str(meta.relative_to(root))
+        try:
+            found = re.findall(r"^guid:\s*([0-9a-fA-F]{32})\s*$", meta.read_text(encoding="utf-8"), re.MULTILINE)
+        except (OSError, UnicodeError):
+            failures.append("Cannot read meta: " + label)
+            continue
+        if len(found) != 1:
+            failures.append("Meta requires exactly one valid GUID: " + label)
+        else:
+            guid = found[0].lower()
+            if guid in guids:
+                failures.append("Duplicate GUID: " + guids[guid] + " and " + label)
+            guids[guid] = label
+    return failures
+
+
+def check(root=ROOT):
+    failures = []
+    for relative in (*CORE, *("Assets/SinkLab/Prefabs/" + p + ".prefab" for p in PREFABS)):
+        if not (root / relative).is_file():
+            failures.append("Missing core file: " + relative)
+    manifest = load_json(root / "Packages/manifest.json", failures, "Packages/manifest.json")
+    dependency = fields(fields(manifest).get("dependencies")).get("com.unity.pipeline")
+    if not isinstance(dependency, str) or not dependency.strip():
+        failures.append("Packages/manifest.json must declare com.unity.pipeline")
+    failures.extend(asset_checks(root))
+    for relative, expected in ASSEMBLIES.items():
+        label = "Assets/SinkLab/" + relative
+        data = load_json(root / label, failures, label)
+        if fields(data).get("name") != expected:
+            failures.append(label + ": expected assembly name " + expected)
+    return failures
+
+
+def same_project(path, root):
+    return isinstance(path, str) and Path(path).resolve() == root.resolve()
+
+
+def editor_ready(payload, root=ROOT):
+    failures = validate_result(payload)
+    if failures:
+        return failures
+    statuses = [node for _, node in layers(payload) if "projectpath" in node and "status" in node]
+    if len(statuses) != 1:
+        return failures + ["Expected one structured editor_status result with projectPath and status"]
+    state = statuses[0]
+    if not same_project(state["projectpath"], root):
+        failures.append("editor_status targets a different project")
+    if str(state["status"]).lower() != "ready":
+        failures.append("Editor status is not ready; let compilation/reload settle or leave Play mode")
+    for key in ("compiling", "domainreloadinprogress"):
+        if state.get(key) is not False:
+            failures.append("editor_status." + key + " must be false")
+    return failures
+
+
+def cli_read(arguments, root):
+    try:
+        result = subprocess.run([str(root / "Tools/unity"), *arguments], cwd=root,
+                                capture_output=True, text=True, timeout=40, check=False)
+    except (OSError, subprocess.TimeoutExpired) as error:
+        return 1, None, ["Checked CLI read failed (" + type(error).__name__ + "); inspect readiness before retrying"]
+    if result.returncode == 77:
+        return 77, None, ["Host process access blocked: run Tools/harness preflight with sandbox_permissions=require_escalated; never retry raw unity"]
+    try:
+        payload = json.loads(result.stdout)
+    except ValueError:
+        return 1, None, ["Checked CLI returned no valid JSON envelope (exit " + str(result.returncode) + ")"]
+    failures = validate_result(payload)
+    if result.returncode:
+        failures.append("Checked CLI exited " + str(result.returncode))
+    return (1 if failures else 0), payload, failures
+
+
+def preflight(root=ROOT):
+    code, payload, failures = cli_read(["status", "--format", "json"], root)
+    if not code:
+        instances = fields(fields(payload).get("data")).get("instances")
+        if not isinstance(instances, list):
+            return 1, ["status.data.instances must be a list of discovered Editors"]
+        current = [fields(item) for item in instances if same_project(fields(item).get("project"), root)]
+        if len(current) != 1 or str(current[0].get("state", "")).lower() != "ready":
+            failures.append("No unique ready Editor instance for this project")
+            code = 1
+    if code:
+        if code != 77:
+            failures.append("Use ./Tools/unity pipeline list --format json with host access to check Safe Mode/connection; no automatic restart was attempted")
+        return code, failures
+    code, payload, failures = cli_read(["command", "editor_status", "--project-path", str(root), "--format", "json"], root)
+    if code:
+        return code, failures
+    failures = editor_ready(payload, root)
+    return (1 if failures else 0), failures
+
+
+def main():
+    parser = argparse.ArgumentParser(description=__doc__)
+    commands = parser.add_subparsers(dest="command", required=True)
+    for name in ("check", "preflight", "result"):
+        sub = commands.add_parser(name)
+        sub.add_argument("--json", action="store_true", help="Print a compact JSON report")
+        if name == "result":
+            sub.add_argument("path", type=Path)
+            sub.add_argument("--tests", action="store_true", help="Require a completed, nonempty, all-passed test summary")
+    args = parser.parse_args()
+    code = 0
+    if args.command == "check":
+        failures = check()
+        scope = "Static files only; no Unity import, prefab inheritance, physics, or gameplay verification."
+    elif args.command == "preflight":
+        code, failures = preflight()
+        scope = "Read-only Editor readiness at this instant; no scene or asset edits."
+    else:
+        failures = []
+        payload = load_json(args.path, failures, "Result file")
+        if not failures:
+            failures.extend(validate_result(payload, args.tests))
+        scope = "Saved result structure only; freshness and applicability to current changes are not established."
+    code = code or (1 if failures else 0)
+    report = {"success": code == 0, "command": args.command, "exitCode": code,
+              "scope": scope, "failures": failures}
+    if args.json:
+        print(json.dumps(report, indent=2))
+    else:
+        print(("PASS" if code == 0 else "BLOCKED" if code == 77 else "FAIL") + " " + args.command)
+        print(scope)
+        for failure in failures:
+            print("- " + failure)
+    return code
+
+
+if __name__ == "__main__":
+    sys.exit(main())

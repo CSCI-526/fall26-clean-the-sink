@@ -1,0 +1,16 @@
+test_complete_files_and_directory_metadata (test_harness.AssetTests) ... ok
+test_missing_orphan_duplicate_and_bad_guid_are_distinct (test_harness.AssetTests) ... ok
+test_wrong_physics_extension_and_invalid_assembly (test_harness.AssetTests) ... ok
+test_editor_requires_project_and_explicit_ready_flags (test_harness.ResultsTests) ... ok
+test_host_refusal_is_preserved_without_second_command (test_harness.ResultsTests) ... ok
+test_json_null_is_not_a_successful_envelope (test_harness.ResultsTests) ... ok
+test_nested_success_and_json_string_test_results (test_harness.ResultsTests) ... ok
+test_outer_or_nested_failure_never_passes (test_harness.ResultsTests) ... ok
+test_pipeline_capitalized_keys (test_harness.ResultsTests) ... ok
+test_running_missing_zero_partial_skipped_inconclusive_do_not_pass (test_harness.ResultsTests) ... ok
+test_summary_cannot_hide_failed_or_missing_test_entries (test_harness.ResultsTests) ... ok
+
+----------------------------------------------------------------------
+Ran 11 tests in 0.020s
+
+OK

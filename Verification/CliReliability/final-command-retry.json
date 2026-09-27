@@ -1,0 +1,30 @@
+{
+  "success": true,
+  "command": "command eval",
+  "data": {
+    "command": "eval",
+    "parameters": {
+      "code": "var scene = UnityEngine.SceneManagement.SceneManager.GetActiveScene(); return new { scene = scene.path, dirty = scene.isDirty, playing = UnityEditor.EditorApplication.isPlaying, compiling = UnityEditor.EditorApplication.isCompiling };",
+      "format": "json"
+    },
+    "result": {
+      "output": null,
+      "diagnostics": [],
+      "success": true,
+      "result": {
+        "scene": "Assets/SinkLab/Scenes/SinkLab.unity",
+        "dirty": false,
+        "playing": false,
+        "compiling": false
+      }
+    },
+    "target": {
+      "host": "127.0.0.1",
+      "port": 7800,
+      "projectPath": "/Users/lilyxu/Desktop/water gun experiment project"
+    },
+    "success": true
+  },
+  "errors": [],
+  "warnings": []
+}
