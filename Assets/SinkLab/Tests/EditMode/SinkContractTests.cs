@@ -31,8 +31,10 @@ namespace SinkLab.Tests
             // empty scene prevents a saved sink from becoming an invisible duplicate.
             // Never discard the user's unsaved scene to achieve that isolation.
             for (int i = 0; i < SceneManager.sceneCount; i++)
+            {
                 Assert.That(SceneManager.GetSceneAt(i).isDirty, Is.False,
                     "Save loaded scenes before running the sink contract tests.");
+            }
 
             previousScenes = EditorSceneManager.GetSceneManagerSetup();
             previousSimulationMode = Physics.simulationMode;
@@ -75,8 +77,10 @@ namespace SinkLab.Tests
                 food.CaptureSpawn();
                 FoodScrap.Active.Add(food);
             }
-            foreach (StainPatch stain in world.stains) StainPatch.Active.Add(stain);
-
+            foreach (StainPatch stain in world.stains)
+            {
+                StainPatch.Active.Add(stain);
+            }
             testCamera = new GameObject("Contract test aim camera").AddComponent<Camera>();
             testCamera.enabled = false;
             testCamera.nearClipPlane = .01f;
@@ -91,20 +95,30 @@ namespace SinkLab.Tests
         [TearDown]
         public void TearDown()
         {
-            if (!restoreEnvironment) return;
+            if (!restoreEnvironment)
+            {
+                return;
+            }
+
             try
             {
                 if (world != null)
                 {
                     foreach (FoodScrap food in world.foods ?? Array.Empty<FoodScrap>())
+                    {
                         FoodScrap.Active.Remove(food);
+                    }
                     foreach (StainPatch stain in world.stains ?? Array.Empty<StainPatch>())
+                    {
                         StainPatch.Active.Remove(stain);
+                    }
                 }
                 EditorSceneManager.NewScene(NewSceneSetup.EmptyScene, NewSceneMode.Single);
                 PruneDestroyedRegistrations();
                 if (previousScenes != null && previousScenes.Length > 0)
+                {
                     EditorSceneManager.RestoreSceneManagerSetup(previousScenes);
+                }
             }
             finally
             {
@@ -126,20 +140,32 @@ namespace SinkLab.Tests
 
             if (foodFirst)
             {
-                foreach (FoodScrap food in world.foods) Consume(food);
+                foreach (FoodScrap food in world.foods)
+                {
+                    Consume(food);
+                }
                 Assert.That(world.FoodRemaining, Is.Zero);
                 Assert.That(world.IsComplete, Is.False, "Unwashed stains must block completion.");
-                for (int i = 0; i < world.stains.Length - 1; i++) world.stains[i].Wash(100f);
+                for (int i = 0; i < world.stains.Length - 1; i++)
+                {
+                    world.stains[i].Wash(100f);
+                }
                 Assert.That(world.StainsRemaining, Is.EqualTo(1));
                 Assert.That(world.IsComplete, Is.False);
                 world.stains[world.stains.Length - 1].Wash(100f);
             }
             else
             {
-                foreach (StainPatch stain in world.stains) stain.Wash(100f);
+                foreach (StainPatch stain in world.stains)
+                {
+                    stain.Wash(100f);
+                }
                 Assert.That(world.StainsRemaining, Is.Zero);
                 Assert.That(world.IsComplete, Is.False, "Undrained food must block completion.");
-                for (int i = 0; i < world.foods.Length - 1; i++) Consume(world.foods[i]);
+                for (int i = 0; i < world.foods.Length - 1; i++)
+                {
+                    Consume(world.foods[i]);
+                }
                 Assert.That(world.FoodRemaining, Is.EqualTo(1));
                 Assert.That(world.IsComplete, Is.False);
                 Consume(world.foods[world.foods.Length - 1]);
@@ -156,12 +182,22 @@ namespace SinkLab.Tests
         {
             // Retain the original expected-object slot. Unity's destroyed-object null
             // semantics must not turn accidental disappearance into cleaning progress.
-            if (destroyFood) UnityEngine.Object.DestroyImmediate(world.foods[0].gameObject);
-            else UnityEngine.Object.DestroyImmediate(world.stains[0].gameObject);
-
-            for (int i = destroyFood ? 1 : 0; i < world.foods.Length; i++) Consume(world.foods[i]);
-            for (int i = destroyFood ? 0 : 1; i < world.stains.Length; i++) world.stains[i].Wash(100f);
-
+            if (destroyFood)
+            {
+                UnityEngine.Object.DestroyImmediate(world.foods[0].gameObject);
+            }
+            else
+            {
+                UnityEngine.Object.DestroyImmediate(world.stains[0].gameObject);
+            }
+            for (int i = destroyFood ? 1 : 0; i < world.foods.Length; i++)
+            {
+                Consume(world.foods[i]);
+            }
+            for (int i = destroyFood ? 0 : 1; i < world.stains.Length; i++)
+            {
+                world.stains[i].Wash(100f);
+            }
             Assert.That(world.FoodRemaining, Is.EqualTo(destroyFood ? 1 : 0));
             Assert.That(world.StainsRemaining, Is.EqualTo(destroyFood ? 0 : 1));
             Assert.That(world.IsComplete, Is.False,
@@ -428,7 +464,9 @@ namespace SinkLab.Tests
             stain.Wash(.25f);
             Assert.That(stain.Remaining, Is.EqualTo(.75f).Within(.00001f));
             foreach (float invalid in new[] { -10f, 0f, float.NaN, float.PositiveInfinity, float.NegativeInfinity })
+            {
                 stain.Wash(invalid);
+            }
             Assert.That(stain.Remaining, Is.EqualTo(.75f).Within(.00001f));
 
             stain.Wash(100f);
@@ -466,16 +504,24 @@ namespace SinkLab.Tests
                 food.Body.rotation = Quaternion.Euler(35f, 82f, -24f);
                 food.Body.linearVelocity = new Vector3(1.2f, .4f, -.7f);
                 food.Body.angularVelocity = new Vector3(.8f, 1.1f, -.5f);
-                if (i % 2 == 0) Consume(food);
+                if (i % 2 == 0)
+                {
+                    Consume(food);
+                }
             }
             for (int i = 0; i < world.stains.Length; i++)
+            {
                 world.stains[i].Wash(i % 2 == 0 ? 100f : .35f);
+            }
             world.water.SetSpraying(true);
 
             world.ResetRun();
             Physics.SyncTransforms();
 
-            for (int i = 0; i < world.foods.Length; i++) snapshots[i].AssertRestored(world.foods[i]);
+            for (int i = 0; i < world.foods.Length; i++)
+            {
+                snapshots[i].AssertRestored(world.foods[i]);
+            }
             for (int i = 0; i < world.stains.Length; i++)
             {
                 StainPatch stain = world.stains[i];
@@ -504,7 +550,8 @@ namespace SinkLab.Tests
             Vector3 center = DrainCenter();
             center.y = drain.captureHeight - .1f;
             PlaceFoodCenter(food, center);
-            Assert.That(drain.TryConsume(food), Is.True, "A scrap inside the opening should be collected: " + food.name);
+            Assert.That(drain.TryConsume(food), Is.True,
+                "A scrap inside the opening should be collected: " + food.name);
             Assert.That(food.IsDrained, Is.True);
         }
 
@@ -558,7 +605,10 @@ namespace SinkLab.Tests
         void SpraySteps(int count, float dt, bool enabled)
         {
             world.water.SetSpraying(enabled);
-            for (int i = 0; i < count; i++) world.water.SimulateSpray(dt);
+            for (int i = 0; i < count; i++)
+            {
+                world.water.SimulateSpray(dt);
+            }
         }
 
         sealed class FoodSnapshot
@@ -596,8 +646,14 @@ namespace SinkLab.Tests
                 Assert.That(food.Body.angularVelocity.sqrMagnitude, Is.LessThan(.0000001f), food.name);
                 Assert.That(food.Body.useGravity, Is.EqualTo(gravity), food.name);
                 Assert.That(food.Body.isKinematic, Is.EqualTo(kinematic), food.name);
-                for (int i = 0; i < renderers.Length; i++) Assert.That(renderers[i].enabled, Is.EqualTo(rendererEnabled[i]));
-                for (int i = 0; i < colliders.Length; i++) Assert.That(colliders[i].enabled, Is.EqualTo(colliderEnabled[i]));
+                for (int i = 0; i < renderers.Length; i++)
+                {
+                    Assert.That(renderers[i].enabled, Is.EqualTo(rendererEnabled[i]));
+                }
+                for (int i = 0; i < colliders.Length; i++)
+                {
+                    Assert.That(colliders[i].enabled, Is.EqualTo(colliderEnabled[i]));
+                }
             }
         }
     }

@@ -1,0 +1,32 @@
+{
+  "success": true,
+  "command": "command eval",
+  "data": {
+    "command": "eval",
+    "parameters": {
+      "code": "int dirtyScenes = 0; for (int i = 0; i < UnityEngine.SceneManagement.SceneManager.sceneCount; i++) { if (UnityEngine.SceneManagement.SceneManager.GetSceneAt(i).isDirty) dirtyScenes++; } return new { playing = UnityEditor.EditorApplication.isPlaying, compiling = UnityEditor.EditorApplication.isCompiling, scene = UnityEngine.SceneManagement.SceneManager.GetActiveScene().path, dirtyScenes = dirtyScenes, prefabStageOpen = UnityEditor.SceneManagement.PrefabStageUtility.GetCurrentPrefabStage() != null, timeScale = UnityEngine.Time.timeScale };",
+      "format": "json"
+    },
+    "result": {
+      "output": null,
+      "diagnostics": [],
+      "success": true,
+      "result": {
+        "playing": false,
+        "compiling": false,
+        "scene": "Assets/SinkLab/Scenes/SinkLab.unity",
+        "dirtyScenes": 0,
+        "prefabStageOpen": false,
+        "timeScale": 1
+      }
+    },
+    "target": {
+      "host": "127.0.0.1",
+      "port": 7800,
+      "projectPath": "/Users/lilyxu/Desktop/water gun experiment project"
+    },
+    "success": true
+  },
+  "errors": [],
+  "warnings": []
+}

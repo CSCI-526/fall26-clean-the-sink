@@ -96,7 +96,8 @@ namespace SinkLab.Editor
                 if (oldCorners == null || savedCorners == null ||
                     PrefabUtility.GetPrefabAssetPathOfNearestInstanceRoot(savedCorners.gameObject) != CornersPath)
                 {
-                    throw new InvalidOperationException("The expected generated rounded-corner prefab is not connected.");
+                    throw new InvalidOperationException(
+                        "The expected generated rounded-corner prefab is not connected.");
                 }
 
                 Object.DestroyImmediate(oldCorners.gameObject);
@@ -105,7 +106,8 @@ namespace SinkLab.Editor
                 if (correctedCorners == null || correctedCorners.childCount != 16 ||
                     cornersRoot.transform.childCount != 16)
                 {
-                    throw new InvalidOperationException("The generated corner layout differs from the known repair layout.");
+                    throw new InvalidOperationException(
+                        "The generated corner layout differs from the known repair layout.");
                 }
 
                 // Validate the complete repair set before changing any persistent asset.
@@ -143,7 +145,8 @@ namespace SinkLab.Editor
                 if (drain.openingMesh == null || drain.openingCollider == null ||
                     drain.openingMesh.transform != drain.openingCollider.transform ||
                     drain.openingMesh.sharedMesh != drain.openingCollider.sharedMesh ||
-                    AssetDatabase.GetAssetPath(drain.openingMesh.sharedMesh) != "Assets/SinkLab/Meshes/DrainOpening.asset")
+                    AssetDatabase.GetAssetPath(drain.openingMesh.sharedMesh) !=
+                        "Assets/SinkLab/Meshes/DrainOpening.asset")
                 {
                     throw new InvalidOperationException("The expected shared drain opening has been replaced.");
                 }
@@ -212,6 +215,7 @@ namespace SinkLab.Editor
                 {
                     throw new InvalidOperationException("Duplicate generated corner part: " + generatedPart.name);
                 }
+
                 match = candidate;
             }
 
@@ -219,6 +223,7 @@ namespace SinkLab.Editor
             {
                 throw new InvalidOperationException("Missing generated corner part: " + generatedPart.name);
             }
+
             return match;
         }
 
@@ -298,6 +303,7 @@ namespace SinkLab.Editor
                     {
                         cornerAsset = PrefabUtility.SaveAsPrefabAsset(corners.gameObject, CornersPath);
                     }
+
                     if (cornerAsset == null)
                     {
                         throw new InvalidOperationException("Could not save the rounded-corner prefab.");
@@ -317,7 +323,8 @@ namespace SinkLab.Editor
                     }
                 }
 
-                foreach (MeshFilter filter in root.transform.Find("Rounded corners").GetComponentsInChildren<MeshFilter>())
+                foreach (MeshFilter filter in
+                    root.transform.Find("Rounded corners").GetComponentsInChildren<MeshFilter>())
                 {
                     if (filter.sharedMesh == null || !EditorUtility.IsPersistent(filter.sharedMesh) ||
                         filter.GetComponent<Renderer>().sharedMaterial == null ||

@@ -25,7 +25,11 @@ namespace SinkLab
 
         void Initialize()
         {
-            if (initialized) return;
+            if (initialized)
+            {
+                return;
+            }
+
             originalScale = transform.localScale;
             stainRenderer = GetComponentInChildren<Renderer>();
             properties = new MaterialPropertyBlock();
@@ -33,18 +37,33 @@ namespace SinkLab
             if (stainRenderer != null && stainRenderer.sharedMaterial != null)
             {
                 Material material = stainRenderer.sharedMaterial;
-                if (material.HasProperty(BaseColor)) originalColor = material.GetColor(BaseColor);
-                else if (material.HasProperty(ColorProperty)) originalColor = material.GetColor(ColorProperty);
+                if (material.HasProperty(BaseColor))
+                {
+                    originalColor = material.GetColor(BaseColor);
+                }
+                else if (material.HasProperty(ColorProperty))
+                {
+                    originalColor = material.GetColor(ColorProperty);
+                }
             }
+
             initialized = true;
         }
 
         public void Wash(float amount)
         {
-            if (amount <= 0f || float.IsNaN(amount) || float.IsInfinity(amount) || IsClean) return;
+            if (amount <= 0f || float.IsNaN(amount) || float.IsInfinity(amount) || IsClean)
+            {
+                return;
+            }
+
             Initialize();
             Remaining = Mathf.Max(0f, Remaining - amount);
-            if (Remaining < .005f) Remaining = 0f;
+            if (Remaining < .005f)
+            {
+                Remaining = 0f;
+            }
+
             UpdateAppearance();
         }
 
@@ -59,7 +78,11 @@ namespace SinkLab
         {
             float scale = Mathf.Sqrt(Remaining);
             transform.localScale = new Vector3(originalScale.x * scale, originalScale.y, originalScale.z * scale);
-            if (stainRenderer == null) return;
+            if (stainRenderer == null)
+            {
+                return;
+            }
+
             stainRenderer.enabled = !IsClean;
             Color color = Color.Lerp(new Color(.56f, .58f, .56f, originalColor.a), originalColor, Remaining);
             stainRenderer.GetPropertyBlock(properties);

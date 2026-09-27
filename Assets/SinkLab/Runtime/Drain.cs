@@ -10,9 +10,12 @@ namespace SinkLab
         public Transform drainCenter;
         public float radius = .22f;
         public bool squareOpening;
-        [Min(0.01f)] public float minRadius = 0.04f;
-        [Min(0f)] public float shrinkPerSecond = 0.0005f;
-        [Min(0f)] public float shrinkPerScrap = 0.006f;
+        [Min(0.01f)]
+        public float minRadius = 0.04f;
+        [Min(0f)]
+        public float shrinkPerSecond = 0.0005f;
+        [Min(0f)]
+        public float shrinkPerScrap = 0.006f;
         [Min(0f)]
         [Tooltip("Distance below the drain opening, in its local frame, that food must cross before collection.")]
         public float captureDepth = .07f;
@@ -339,7 +342,10 @@ namespace SinkLab
                 AddQuad(triangles, current + 1, next + 1, next + 3, current + 3);
             }
 
-            var mesh = new Mesh { name = "Drain opening" };
+            var mesh = new Mesh
+            {
+                name = "Drain opening"
+            };
             mesh.vertices = vertices;
             mesh.uv = uv;
             mesh.SetTriangles(triangles, 0);

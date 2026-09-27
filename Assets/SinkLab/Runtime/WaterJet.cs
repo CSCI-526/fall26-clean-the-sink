@@ -17,13 +17,16 @@ namespace SinkLab
         public bool IsSpraying { get; private set; }
         public bool WideSpray { get; set; }
         public BasinWater basin;
+
         float pressure = .6f;
         readonly Collider[] muzzleOverlaps = new Collider[16];
+
         public float Pressure
         {
             get => pressure;
             set => pressure = float.IsNaN(value) ? 0f : Mathf.Clamp01(value);
         }
+
         public Vector3 LastHitPoint { get; private set; }
         public Vector3 LastHitNormal { get; private set; } = Vector3.up;
         public bool HasHit { get; private set; }
@@ -32,14 +35,20 @@ namespace SinkLab
         public void SetSpraying(bool spraying)
         {
             IsSpraying = spraying;
-            if (!spraying) HasHit = false;
+            if (!spraying)
+            {
+                HasHit = false;
+            }
         }
 
         void OnDisable() => SetSpraying(false);
 
         void FixedUpdate()
         {
-            if (IsSpraying) SimulateSpray(Time.fixedDeltaTime);
+            if (IsSpraying)
+            {
+                SimulateSpray(Time.fixedDeltaTime);
+            }
         }
 
         public void SimulateSpray(float dt)
@@ -204,7 +213,8 @@ namespace SinkLab
                 }
 
                 float edgeCoverage = Mathf.Clamp01(
-                    (EffectiveRadius + remainingRadius - distance) / Mathf.Max(minimumEdgeRadiusMeters, remainingRadius));
+                    (EffectiveRadius + remainingRadius - distance)
+                    / Mathf.Max(minimumEdgeRadiusMeters, remainingRadius));
                 float modeCleaningScale = WideSpray ? wideSprayCleaningScale : 1f;
                 stain.Wash(cleaningRate * pressureFactor * modeCleaningScale * edgeCoverage * dt);
             }
@@ -244,17 +254,30 @@ namespace SinkLab
             Vector3 start = impact + Vector3.up * .045f;
             Vector3 end = contact + Vector3.up * .045f;
             Vector3 delta = end - start;
-            if (delta.sqrMagnitude < .0001f) return true;
+            if (delta.sqrMagnitude < .0001f)
+            {
+                return true;
+            }
+
             if (!Physics.Raycast(start, delta.normalized, out RaycastHit blocker, delta.magnitude,
-                waterMask, QueryTriggerInteraction.Ignore)) return true;
+                waterMask, QueryTriggerInteraction.Ignore))
+            {
+                return true;
+            }
+
             return blocker.collider.GetComponentInParent<FoodScrap>() == target;
         }
 
         bool VisibleFromNozzle(Vector3 origin, Vector3 destination, StainPatch target)
         {
             Vector3 delta = destination - origin;
-            if (!Physics.Raycast(origin, delta.normalized, out RaycastHit blocker, Mathf.Max(0f, delta.magnitude - .012f),
-                waterMask, QueryTriggerInteraction.Ignore)) return true;
+            if (!Physics.Raycast(
+                origin, delta.normalized, out RaycastHit blocker, Mathf.Max(0f, delta.magnitude - .012f),
+                waterMask, QueryTriggerInteraction.Ignore))
+            {
+                return true;
+            }
+
             return blocker.collider.GetComponentInParent<StainPatch>() == target;
         }
     }

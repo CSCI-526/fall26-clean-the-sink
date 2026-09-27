@@ -50,8 +50,14 @@ namespace SinkLab.Tests
             // A saved playable sink must not collide with the independent test prefab instance.
             foreach (SinkWorld existing in Object.FindObjectsByType<SinkWorld>(FindObjectsSortMode.None))
             {
-                if (!existing.gameObject.activeInHierarchy) continue;
-                if (existing.player != null && existing.player.HasControl) controlledPlayers.Add(existing.player);
+                if (!existing.gameObject.activeInHierarchy)
+                {
+                    continue;
+                }
+                if (existing.player != null && existing.player.HasControl)
+                {
+                    controlledPlayers.Add(existing.player);
+                }
                 suspendedWorlds.Add(existing.gameObject);
                 existing.gameObject.SetActive(false);
             }
@@ -85,16 +91,37 @@ namespace SinkLab.Tests
                 // only the instantiated hierarchy, not those shared dependencies.
                 Object.Destroy(world.gameObject);
             }
-            if (keyboard != null && keyboard.added) InputSystem.RemoveDevice(keyboard);
-            if (mouse != null && mouse.added) InputSystem.RemoveDevice(mouse);
+            if (keyboard != null && keyboard.added)
+            {
+                InputSystem.RemoveDevice(keyboard);
+            }
+            if (mouse != null && mouse.added)
+            {
+                InputSystem.RemoveDevice(mouse);
+            }
             foreach (InputDevice device in disabledDevices)
-                if (device != null && device.added) InputSystem.EnableDevice(device);
+            {
+                if (device != null && device.added)
+                {
+                    InputSystem.EnableDevice(device);
+                }
+            }
             disabledDevices.Clear();
             foreach (GameObject previousWorld in suspendedWorlds)
-                if (previousWorld != null) previousWorld.SetActive(true);
+            {
+                if (previousWorld != null)
+                {
+                    previousWorld.SetActive(true);
+                }
+            }
             suspendedWorlds.Clear();
             foreach (SinkPlayer previousPlayer in controlledPlayers)
-                if (previousPlayer != null) previousPlayer.SetControl(true);
+            {
+                if (previousPlayer != null)
+                {
+                    previousPlayer.SetControl(true);
+                }
+            }
             controlledPlayers.Clear();
             if (settingsCaptured)
             {
@@ -183,16 +210,22 @@ namespace SinkLab.Tests
         {
             Vector3 start = world.player.transform.position;
             for (float elapsed = 0f; elapsed < .3f; elapsed += Time.deltaTime)
+            {
                 yield return InputFrame(new[] { Key.D });
+            }
             Assert.That(world.player.transform.position.x, Is.GreaterThan(start.x + .2f),
                 "D must move the real CharacterController sideways.");
 
             for (float elapsed = 0f; elapsed < .3f; elapsed += Time.deltaTime)
+            {
                 yield return InputFrame(new[] { Key.A });
+            }
             Assert.That(Mathf.Abs(world.player.transform.position.x - start.x), Is.LessThan(.2f));
 
             for (float elapsed = 0f; elapsed < .6f; elapsed += Time.deltaTime)
+            {
                 yield return InputFrame(new[] { Key.W });
+            }
             Vector3 blocked = world.player.transform.position;
             Collider counter = world.transform.Find("Sink/Counter/Counter front").GetComponent<Collider>();
             Assert.That(blocked.z, Is.GreaterThan(start.z + .04f), "W must move until reaching the obstacle.");
@@ -201,7 +234,9 @@ namespace SinkLab.Tests
             Assert.That(blocked.y, Is.LessThan(.15f), "The controller must not climb onto the counter.");
 
             for (float elapsed = 0f; elapsed < .2f; elapsed += Time.deltaTime)
+            {
                 yield return InputFrame(new[] { Key.S });
+            }
             Assert.That(world.player.transform.position.z, Is.LessThan(blocked.z - .15f),
                 "S must back away from the obstacle instead of leaving the player stuck.");
         }
@@ -222,7 +257,9 @@ namespace SinkLab.Tests
 
             yield return InputFrame(mouseState: new MouseState { delta = new Vector2(150f, -80f) });
             for (float elapsed = 0f; elapsed < .2f; elapsed += Time.deltaTime)
+            {
                 yield return InputFrame(new[] { Key.D });
+            }
             yield return InputFrame(mouseState: new MouseState().WithButton(MouseButton.Left));
             Assert.That(world.water.IsSpraying, Is.True);
             yield return InputFrame(new[] { Key.Escape });
@@ -272,8 +309,9 @@ namespace SinkLab.Tests
 
             MouseState held = new MouseState().WithButton(MouseButton.Left);
             for (float elapsed = 0f; elapsed < 1f; elapsed += Time.deltaTime)
+            {
                 yield return InputFrame(mouseState: held);
-
+            }
             Assert.That(world.water.IsSpraying, Is.True);
             Assert.That(stain.Remaining, Is.LessThan(.98f),
                 "The real nozzle must clear the near rim and wash the visible stain while LMB is held.");

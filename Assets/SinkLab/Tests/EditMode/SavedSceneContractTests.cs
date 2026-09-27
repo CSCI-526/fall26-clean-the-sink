@@ -27,8 +27,10 @@ namespace SinkLab.Tests
         public void SetUp()
         {
             for (int i = 0; i < SceneManager.sceneCount; i++)
+            {
                 Assert.That(SceneManager.GetSceneAt(i).isDirty, Is.False,
                     "Save loaded scenes before running the saved-scene integration tests.");
+            }
 
             previousScenes = EditorSceneManager.GetSceneManagerSetup();
             previousSimulationMode = Physics.simulationMode;
@@ -63,7 +65,10 @@ namespace SinkLab.Tests
                     food.CaptureSpawn();
                     FoodScrap.Active.Add(food);
                 }
-                foreach (StainPatch stain in world.stains) StainPatch.Active.Add(stain);
+                foreach (StainPatch stain in world.stains)
+                {
+                    StainPatch.Active.Add(stain);
+                }
                 world.water.SetSpraying(false);
                 Physics.SyncTransforms();
             }
@@ -77,19 +82,31 @@ namespace SinkLab.Tests
         [TearDown]
         public void TearDown()
         {
-            if (!restoreEnvironment) return;
+            if (!restoreEnvironment)
+            {
+                return;
+            }
+
             try
             {
                 if (world != null)
                 {
-                    foreach (FoodScrap food in world.foods ?? Array.Empty<FoodScrap>()) FoodScrap.Active.Remove(food);
-                    foreach (StainPatch stain in world.stains ?? Array.Empty<StainPatch>()) StainPatch.Active.Remove(stain);
+                    foreach (FoodScrap food in world.foods ?? Array.Empty<FoodScrap>())
+                    {
+                        FoodScrap.Active.Remove(food);
+                    }
+                    foreach (StainPatch stain in world.stains ?? Array.Empty<StainPatch>())
+                    {
+                        StainPatch.Active.Remove(stain);
+                    }
                 }
                 // Discard only the test's unsaved changes; no SaveScene/SaveAssets calls.
                 EditorSceneManager.NewScene(NewSceneSetup.EmptyScene, NewSceneMode.Single);
                 PruneDestroyedRegistrations();
                 if (previousScenes != null && previousScenes.Length > 0)
+                {
                     EditorSceneManager.RestoreSceneManagerSetup(previousScenes);
+                }
             }
             finally
             {
@@ -117,8 +134,12 @@ namespace SinkLab.Tests
                     Assert.That(EditorUtility.IsPersistent(material), Is.True,
                         food.name + " must reference a saved asset, not a temporary material.");
                     Assert.That(AssetDatabase.GetAssetPath(material), Does.StartWith("Assets/"));
-                    if (expected == null) expected = material;
-                    Assert.That(material, Is.SameAs(expected), "All food colliders must retain the shared wet-food material.");
+                    if (expected == null)
+                    {
+                        expected = material;
+                    }
+                    Assert.That(material, Is.SameAs(expected),
+                        "All food colliders must retain the shared wet-food material.");
                     // This is a deliberate tuning dependency: the normal .20 N water
                     // force must overcome food-floor friction without suspending food.
                     Assert.That(material.staticFriction, Is.InRange(0f, .12f), food.name);
@@ -134,7 +155,10 @@ namespace SinkLab.Tests
             foreach (FoodScrap food in world.foods)
             {
                 SphereCollider collider = food.GetComponent<SphereCollider>();
-                if (collider == null) continue;
+                if (collider == null)
+                {
+                    continue;
+                }
                 sphereCount++;
                 Vector3 scale = food.transform.lossyScale;
                 Assert.That(scale.x, Is.GreaterThan(0f), food.name);
@@ -163,7 +187,10 @@ namespace SinkLab.Tests
                 "Exercise the production force, not a force increased to overcome missing friction assets.");
 
             // Settle the untouched saved world onto its actual basin floor first.
-            for (int i = 0; i < 50; i++) Physics.Simulate(.02f);
+            for (int i = 0; i < 50; i++)
+            {
+                Physics.Simulate(.02f);
+            }
             Physics.SyncTransforms();
             Collider foodCollider = food.GetComponent<Collider>();
             RaycastHit[] below = Physics.RaycastAll(food.Body.worldCenterOfMass + Vector3.up * .1f,
@@ -175,7 +202,10 @@ namespace SinkLab.Tests
             Assert.That(Mathf.Abs(foodCollider.bounds.min.y - supports[0].point.y), Is.LessThan(.025f));
 
             Vector3 settled = food.Body.position;
-            for (int i = 0; i < 15; i++) Physics.Simulate(.02f);
+            for (int i = 0; i < 15; i++)
+            {
+                Physics.Simulate(.02f);
+            }
             Assert.That(Vector3.Distance(food.Body.position, settled), Is.LessThan(.01f),
                 "Food must remain settled before water is enabled.");
 

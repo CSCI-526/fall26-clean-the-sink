@@ -1,0 +1,7 @@
+{
+  "success": true,
+  "command": "check",
+  "exitCode": 0,
+  "scope": "Static files only; no Unity import, prefab inheritance, physics, or gameplay verification.",
+  "failures": []
+}

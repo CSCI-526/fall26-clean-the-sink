@@ -23,26 +23,52 @@ namespace SinkLab
             EnsureStyles();
             if (world != null)
             {
-                if (player == null) player = world.player;
-                if (water == null) water = world.water;
+                if (player == null)
+                {
+                    player = world.player;
+                }
+
+                if (water == null)
+                {
+                    water = world.water;
+                }
             }
 
             Matrix4x4 oldMatrix = GUI.matrix;
             Color oldColor = GUI.color;
             float scale = Mathf.Clamp(Screen.width / 1100f, 0.65f, 1.2f);
-            _small.fontSize = _center.fontSize = Mathf.Max(14, Mathf.CeilToInt(11f / scale));
+            int guidanceFontSize = Mathf.Max(14, Mathf.CeilToInt(11f / scale));
+            _center.fontSize = guidanceFontSize;
+            _small.fontSize = guidanceFontSize;
             GUI.matrix = Matrix4x4.Scale(Vector3.one * scale);
             float width = Screen.width / scale;
             float height = Screen.height / scale;
             bool compact = width < 650f;
 
+            DrawObjectives(compact);
+            DrawWaterStatus(width, compact);
+            DrawAimGuidance(width, height);
+            DrawRunResult(width);
+            DrawControlHints(width, height, compact);
+
+            GUI.color = oldColor;
+            GUI.matrix = oldMatrix;
+        }
+
+        void DrawObjectives(bool compact)
+        {
             float leftWidth = compact ? 200f : 230f;
             Panel(new Rect(16f, 16f, leftWidth, 72f));
             GUI.Label(new Rect(30f, 24f, leftWidth - 28f, 26f), "SINK", _title);
             if (world != null)
+            {
                 GUI.Label(new Rect(30f, 52f, leftWidth - 28f, 24f),
                     $"Food {world.FoodRemaining}    Stains {world.StainsRemaining}", _body);
+            }
+        }
 
+        void DrawWaterStatus(float width, bool compact)
+        {
             float rightWidth = compact ? 210f : 250f;
             float rightX = width - rightWidth - 16f;
             BasinWater basin = world != null ? world.basin : null;
@@ -54,23 +80,40 @@ namespace SinkLab
             int pressure = water == null ? 0 : Mathf.RoundToInt(Mathf.Lerp(26f, 100f, water.Pressure));
             GUI.Label(new Rect(rightX + 14f, 48f, rightWidth - 28f, 18f), $"Pressure {pressure}%", _small);
             DrawMeter(new Rect(rightX + 14f, 68f, rightWidth - 28f, 5f), pressure / 100f, _accent);
+
             float waterLevel = basin == null ? 0f : basin.NormalizedLevel;
             Color waterColor = Color.Lerp(_accent, new Color(0.95f, 0.28f, 0.22f), waterLevel);
-            GUI.Label(new Rect(rightX + 14f, 80f, rightWidth - 28f, 18f), $"Water {Mathf.RoundToInt(waterLevel * 100f)}%", _small);
+            GUI.Label(new Rect(rightX + 14f, 80f, rightWidth - 28f, 18f),
+                $"Water {Mathf.RoundToInt(waterLevel * 100f)}%", _small);
             DrawMeter(new Rect(rightX + 14f, 100f, rightWidth - 28f, 5f), waterLevel, waterColor);
+
             bool holeOpen = world == null || world.drain == null || world.drain.IsOpen;
             float opening = 1f;
             if (world != null && world.drain != null && world.drain.StartRadius > 0.001f)
+            {
                 opening = Mathf.Clamp01(world.drain.radius / world.drain.StartRadius);
-            if (!holeOpen) opening = 0f;
+            }
+
+            if (!holeOpen)
+            {
+                opening = 0f;
+            }
+
             GUI.Label(new Rect(rightX + 14f, 112f, rightWidth - 28f, 18f),
                 holeOpen ? $"Drain {Mathf.RoundToInt(opening * 100f)}%" : "Drain shut", _small);
             DrawMeter(new Rect(rightX + 14f, 132f, rightWidth - 28f, 5f), opening, new Color(0.78f, 0.86f, 0.88f));
             if (warn)
+            {
                 GUI.Label(new Rect(rightX + 14f, 142f, rightWidth - 28f, 18f), "High water", _small);
+            }
+        }
 
+        void DrawAimGuidance(float width, float height)
+        {
             if (player != null && player.HasControl)
+            {
                 DrawReticle(width * 0.5f, height * 0.5f, water != null && water.IsSpraying);
+            }
             else
             {
                 Rect capture = new Rect(width * 0.5f - 175f, height * 0.5f - 37f, 350f, 74f);
@@ -78,7 +121,10 @@ namespace SinkLab
                 GUI.Label(new Rect(capture.x + 10f, capture.y + 9f, 330f, 28f), "Click to aim", _center);
                 GUI.Label(new Rect(capture.x + 10f, capture.y + 38f, 330f, 25f), "Hold LMB to spray", _center);
             }
+        }
 
+        void DrawRunResult(float width)
+        {
             if (world != null && world.IsComplete)
             {
                 float bannerWidth = Mathf.Min(440f, width - 32f);
@@ -101,7 +147,10 @@ namespace SinkLab
                 GUI.Label(new Rect(banner.x + 12f, banner.y + 48f, banner.width - 24f, 22f), reason, _center);
                 GUI.Label(new Rect(banner.x + 12f, banner.y + 70f, banner.width - 24f, 20f), "R reset", _center);
             }
+        }
 
+        void DrawControlHints(float width, float height, bool compact)
+        {
             float toolWidth = compact ? 176f : 210f;
             float controlsWidth = Mathf.Min(560f, width - toolWidth - 44f);
             Rect controls = new Rect(16f, height - 75f, controlsWidth, 59f);
@@ -111,16 +160,17 @@ namespace SinkLab
             GUI.Label(new Rect(controls.x + 8f, controls.y + 30f, controls.width - 16f, 24f),
                 "Scroll pressure  /  E hold water  /  R reset", _center);
             DrawDrainTool(new Rect(width - toolWidth - 16f, height - 92f, toolWidth, 76f));
-
-            GUI.color = oldColor;
-            GUI.matrix = oldMatrix;
         }
 
         void DrawDrainTool(Rect panel)
         {
             Panel(panel);
             GUI.Label(new Rect(panel.x + 10f, panel.y + 6f, panel.width - 20f, 18f), "Once", _small);
-            if (world == null || world.drain == null) return;
+            if (world == null || world.drain == null)
+            {
+                return;
+            }
+
             bool ready = world.drain.HasFullOpenCharge;
             GUI.Label(new Rect(panel.x + 10f, panel.y + 24f, panel.width - 20f, 22f),
                 ready ? "F  Open drain" : "Used", _body);
@@ -128,22 +178,48 @@ namespace SinkLab
             if (ready)
             {
                 if (GUI.Button(button, "Use"))
+                {
                     world.drain.TryOpenFully();
+                }
             }
-            else GUI.Label(button, "Spent", _center);
+            else
+            {
+                GUI.Label(button, "Spent", _center);
+            }
         }
 
         void EnsureStyles()
         {
-            if (_title != null) return;
-            _title = new GUIStyle(GUI.skin.label) { fontSize = 20, fontStyle = FontStyle.Bold };
+            if (_title != null)
+            {
+                return;
+            }
+
+            _title = new GUIStyle(GUI.skin.label)
+            {
+                fontSize = 20,
+                fontStyle = FontStyle.Bold
+            };
             _title.normal.textColor = Color.white;
-            _body = new GUIStyle(GUI.skin.label) { fontSize = 16 };
+            _body = new GUIStyle(GUI.skin.label)
+            {
+                fontSize = 16
+            };
             _body.normal.textColor = Color.white;
-            _small = new GUIStyle(GUI.skin.label) { fontSize = 14 };
+            _small = new GUIStyle(GUI.skin.label)
+            {
+                fontSize = 14
+            };
             _small.normal.textColor = _muted;
-            _center = new GUIStyle(_small) { alignment = TextAnchor.MiddleCenter };
-            _complete = new GUIStyle(_title) { fontSize = 27, alignment = TextAnchor.MiddleCenter };
+            _center = new GUIStyle(_small)
+            {
+                alignment = TextAnchor.MiddleCenter
+            };
+            _complete = new GUIStyle(_title)
+            {
+                fontSize = 27,
+                alignment = TextAnchor.MiddleCenter
+            };
             _complete.normal.textColor = _accent;
         }
 

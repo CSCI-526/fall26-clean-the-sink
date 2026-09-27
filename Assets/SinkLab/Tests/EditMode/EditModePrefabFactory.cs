@@ -20,7 +20,10 @@ namespace SinkLab.Tests
         internal static GameObject Instantiate(string relativePath, Transform parent = null)
         {
             GameObject instance = (GameObject)PrefabUtility.InstantiatePrefab(Load(relativePath));
-            if (parent != null) instance.transform.SetParent(parent, false);
+            if (parent != null)
+            {
+                instance.transform.SetParent(parent, false);
+            }
             return instance;
         }
 

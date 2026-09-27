@@ -20,8 +20,16 @@ namespace SinkLab
             {
                 int count = 0;
                 if (foods != null)
+                {
                     foreach (FoodScrap food in foods)
-                        if (food == null || !food.IsDrained) count++;
+                    {
+                        if (food == null || !food.IsDrained)
+                        {
+                            count++;
+                        }
+                    }
+                }
+
                 return count;
             }
         }
@@ -32,8 +40,16 @@ namespace SinkLab
             {
                 int count = 0;
                 if (stains != null)
+                {
                     foreach (StainPatch stain in stains)
-                        if (stain == null || !stain.IsClean) count++;
+                    {
+                        if (stain == null || !stain.IsClean)
+                        {
+                            count++;
+                        }
+                    }
+                }
+
                 return count;
             }
         }
@@ -109,23 +125,61 @@ namespace SinkLab
 
         public void ResetRun()
         {
-            if (water != null) water.SetSpraying(false);
+            if (water != null)
+            {
+                water.SetSpraying(false);
+            }
+
             if (foods != null)
+            {
                 foreach (FoodScrap food in foods)
-                    if (food != null) food.ResetScrap();
+                {
+                    if (food != null)
+                    {
+                        food.ResetScrap();
+                    }
+                }
+            }
+
             if (stains != null)
+            {
                 foreach (StainPatch stain in stains)
-                    if (stain != null) stain.ResetStain();
-            if (drain != null) drain.ResetCount();
-            if (basin != null) basin.ResetWater();
-            if (player != null) player.ResetPlayer();
+                {
+                    if (stain != null)
+                    {
+                        stain.ResetStain();
+                    }
+                }
+            }
+
+            if (drain != null)
+            {
+                drain.ResetCount();
+            }
+
+            if (basin != null)
+            {
+                basin.ResetWater();
+            }
+
+            if (player != null)
+            {
+                player.ResetPlayer();
+            }
+
             Physics.SyncTransforms();
         }
 
         T FindLevelComponent<T>() where T : Component
         {
             foreach (T candidate in GetComponentsInChildren<T>(true))
-                if (BelongsToThisLevel(candidate)) return candidate;
+            {
+                if (BelongsToThisLevel(candidate))
+                {
+                    return candidate;
+                }
+            }
+
             return null;
         }
 
@@ -133,7 +187,13 @@ namespace SinkLab
         {
             var result = new List<T>();
             foreach (T candidate in GetComponentsInChildren<T>(true))
-                if (BelongsToThisLevel(candidate)) result.Add(candidate);
+            {
+                if (BelongsToThisLevel(candidate))
+                {
+                    result.Add(candidate);
+                }
+            }
+
             return result.ToArray();
         }
 
