@@ -36,23 +36,20 @@ namespace SinkLab
             float height = Screen.height / scale;
             bool compact = width < 650f;
 
-            float leftWidth = compact ? 235f : 285f;
-            Panel(new Rect(16f, 16f, leftWidth, 94f));
-            GUI.Label(new Rect(30f, 26f, leftWidth - 28f, 29f), "SINK / WATER ONLY", _title);
+            float leftWidth = compact ? 200f : 230f;
+            Panel(new Rect(16f, 16f, leftWidth, 72f));
+            GUI.Label(new Rect(30f, 24f, leftWidth - 28f, 26f), "SINK", _title);
             if (world != null)
-            {
-                GUI.Label(new Rect(30f, 59f, leftWidth - 28f, 25f),
-                    $"Food: {world.FoodRemaining} left     Stains: {world.StainsRemaining} left", _body);
-                GUI.Label(new Rect(30f, 83f, leftWidth - 28f, 19f), "Spray food. Water pushes it away.", _small);
-            }
+                GUI.Label(new Rect(30f, 52f, leftWidth - 28f, 24f),
+                    $"Food {world.FoodRemaining}    Stains {world.StainsRemaining}", _body);
 
             float rightWidth = compact ? 210f : 250f;
             float rightX = width - rightWidth - 16f;
             BasinWater basin = world != null ? world.basin : null;
             bool warn = basin != null && !basin.IsOverflowed && basin.NormalizedLevel >= 0.62f;
-            float rightHeight = warn ? 176f : 156f;
+            float rightHeight = warn ? 162f : 140f;
             Panel(new Rect(rightX, 16f, rightWidth, rightHeight));
-            string mode = water != null && water.WideSpray ? "SHOWER / WIDE" : "JET / FOCUSED";
+            string mode = water != null && water.WideSpray ? "SHOWER" : "JET";
             GUI.Label(new Rect(rightX + 14f, 24f, rightWidth - 28f, 22f), mode, _body);
             int pressure = water == null ? 0 : Mathf.RoundToInt(Mathf.Lerp(26f, 100f, water.Pressure));
             GUI.Label(new Rect(rightX + 14f, 48f, rightWidth - 28f, 18f), $"Pressure {pressure}%", _small);
@@ -67,12 +64,10 @@ namespace SinkLab
                 opening = Mathf.Clamp01(world.drain.radius / world.drain.StartRadius);
             if (!holeOpen) opening = 0f;
             GUI.Label(new Rect(rightX + 14f, 112f, rightWidth - 28f, 18f),
-                holeOpen ? $"Drain {Mathf.RoundToInt(opening * 100f)}% open" : "Drain closed", _small);
+                holeOpen ? $"Drain {Mathf.RoundToInt(opening * 100f)}%" : "Drain shut", _small);
             DrawMeter(new Rect(rightX + 14f, 132f, rightWidth - 28f, 5f), opening, new Color(0.78f, 0.86f, 0.88f));
-            GUI.Label(new Rect(rightX + 14f, 142f, rightWidth - 28f, 18f),
-                holeOpen ? "E closes the hole to hold water." : "E opens it. Water pulls food in.", _small);
             if (warn)
-                GUI.Label(new Rect(rightX + 14f, 162f, rightWidth - 28f, 22f), "Release spray. Let it drop.", _small);
+                GUI.Label(new Rect(rightX + 14f, 142f, rightWidth - 28f, 18f), "High water", _small);
 
             if (player != null && player.HasControl)
                 DrawReticle(width * 0.5f, height * 0.5f, water != null && water.IsSpraying);
@@ -81,41 +76,61 @@ namespace SinkLab
                 Rect capture = new Rect(width * 0.5f - 175f, height * 0.5f - 37f, 350f, 74f);
                 Panel(capture);
                 GUI.Label(new Rect(capture.x + 10f, capture.y + 9f, 330f, 28f), "Click to aim", _center);
-                GUI.Label(new Rect(capture.x + 10f, capture.y + 38f, 330f, 25f), "Then hold left mouse to spray.", _center);
+                GUI.Label(new Rect(capture.x + 10f, capture.y + 38f, 330f, 25f), "Hold LMB to spray", _center);
             }
 
-            if (world != null && world.IsOverflowed)
+            if (world != null && world.IsComplete)
+            {
+                float bannerWidth = Mathf.Min(440f, width - 32f);
+                Rect banner = new Rect((width - bannerWidth) * 0.5f, 188f, bannerWidth, 95f);
+                Panel(banner);
+                GUI.Label(new Rect(banner.x + 12f, banner.y + 9f, banner.width - 24f, 35f), "Success", _complete);
+                GUI.Label(new Rect(banner.x + 12f, banner.y + 48f, banner.width - 24f, 22f), "Clean", _center);
+                GUI.Label(new Rect(banner.x + 12f, banner.y + 70f, banner.width - 24f, 20f), "R reset", _center);
+            }
+            else if (world != null && (world.IsOverflowed || world.IsDrainSealed))
             {
                 float bannerWidth = Mathf.Min(460f, width - 32f);
                 Rect banner = new Rect((width - bannerWidth) * 0.5f, 188f, bannerWidth, 95f);
                 Panel(banner);
                 Color previousComplete = _complete.normal.textColor;
                 _complete.normal.textColor = new Color(0.95f, 0.34f, 0.28f);
-                GUI.Label(new Rect(banner.x + 12f, banner.y + 9f, banner.width - 24f, 35f), "Sink overflowed.", _complete);
+                GUI.Label(new Rect(banner.x + 12f, banner.y + 9f, banner.width - 24f, 35f), "Fail", _complete);
                 _complete.normal.textColor = previousComplete;
-                GUI.Label(new Rect(banner.x + 12f, banner.y + 45f, banner.width - 24f, 24f), "The water crossed the rim.", _center);
-                GUI.Label(new Rect(banner.x + 12f, banner.y + 70f, banner.width - 24f, 20f), "Press R for a fresh sink", _center);
-            }
-            else if (world != null && world.IsComplete)
-            {
-                float bannerWidth = Mathf.Min(440f, width - 32f);
-                Rect banner = new Rect((width - bannerWidth) * 0.5f, 188f, bannerWidth, 95f);
-                Panel(banner);
-                GUI.Label(new Rect(banner.x + 12f, banner.y + 9f, banner.width - 24f, 35f), "Sink clear.", _complete);
-                GUI.Label(new Rect(banner.x + 12f, banner.y + 45f, banner.width - 24f, 24f), "All food drained. All stains washed away.", _center);
-                GUI.Label(new Rect(banner.x + 12f, banner.y + 70f, banner.width - 24f, 20f), "Press R for a fresh sink", _center);
+                string reason = world.IsOverflowed ? "Water spilled" : "Drain closed";
+                GUI.Label(new Rect(banner.x + 12f, banner.y + 48f, banner.width - 24f, 22f), reason, _center);
+                GUI.Label(new Rect(banner.x + 12f, banner.y + 70f, banner.width - 24f, 20f), "R reset", _center);
             }
 
-            float controlsWidth = Mathf.Min(750f, width - 32f);
-            Rect controls = new Rect((width - controlsWidth) * 0.5f, height - 75f, controlsWidth, 59f);
+            float toolWidth = compact ? 176f : 210f;
+            float controlsWidth = Mathf.Min(560f, width - toolWidth - 44f);
+            Rect controls = new Rect(16f, height - 75f, controlsWidth, 59f);
             Panel(controls);
             GUI.Label(new Rect(controls.x + 8f, controls.y + 6f, controls.width - 16f, 25f),
                 "WASD move  /  Mouse aim  /  Hold LMB spray  /  Q or RMB mode", _center);
             GUI.Label(new Rect(controls.x + 8f, controls.y + 30f, controls.width - 16f, 24f),
-                "Scroll pressure  /  E open or close hole  /  R reset", _center);
+                "Scroll pressure  /  E hold water  /  R reset", _center);
+            DrawDrainTool(new Rect(width - toolWidth - 16f, height - 92f, toolWidth, 76f));
 
             GUI.color = oldColor;
             GUI.matrix = oldMatrix;
+        }
+
+        void DrawDrainTool(Rect panel)
+        {
+            Panel(panel);
+            GUI.Label(new Rect(panel.x + 10f, panel.y + 6f, panel.width - 20f, 18f), "Once", _small);
+            if (world == null || world.drain == null) return;
+            bool ready = world.drain.HasFullOpenCharge;
+            GUI.Label(new Rect(panel.x + 10f, panel.y + 24f, panel.width - 20f, 22f),
+                ready ? "F  Open drain" : "Used", _body);
+            Rect button = new Rect(panel.x + 10f, panel.y + 48f, panel.width - 20f, 22f);
+            if (ready)
+            {
+                if (GUI.Button(button, "Use"))
+                    world.drain.TryOpenFully();
+            }
+            else GUI.Label(button, "Spent", _center);
         }
 
         void EnsureStyles()

@@ -39,9 +39,9 @@ namespace SinkLab
         const float InnerHalfZ = 1.05f;
         const float FloorTop = 0.80f;
         const float FloorThickness = 0.12f;
-        const float WallHeight = 0.35f;
+        const float WallHeight = 0.20f;
         const float WallThickness = 0.12f;
-        const float RimBottom = 1.125f;
+        const float RimBottom = 0.965f;
         const float RimHeight = 0.07f;
         const float RimThickness = 0.195f;
         const int Segments = 12;
@@ -147,6 +147,8 @@ namespace SinkLab
             box.transform.SetParent(holder, false);
             box.transform.localPosition = new Vector3((x0 + x1) * 0.5f, 0.74f, (z0 + z1) * 0.5f);
             box.transform.localScale = new Vector3(Mathf.Abs(x1 - x0), FloorThickness, Mathf.Abs(z1 - z0));
+            Collider boxCollider = box.GetComponent<Collider>();
+            if (boxCollider != null) boxCollider.contactOffset = 0.001f;
             Renderer renderer = box.GetComponent<Renderer>();
             renderer.sharedMaterial = material;
             renderer.shadowCastingMode = ShadowCastingMode.Off;
@@ -166,6 +168,7 @@ namespace SinkLab
             MeshCollider collider = go.AddComponent<MeshCollider>();
             collider.sharedMesh = mesh;
             collider.convex = convex;
+            collider.contactOffset = 0.001f;
         }
 
         static Material DoubleSided(Material source)

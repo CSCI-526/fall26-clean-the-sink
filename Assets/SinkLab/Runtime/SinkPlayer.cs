@@ -54,6 +54,9 @@ namespace SinkLab
             Mouse mouse = Mouse.current;
 
             // Reset is available with either captured or released mouse input.
+            if (keys != null && keys.fKey.wasPressedThisFrame && world != null && world.drain != null)
+                world.drain.TryOpenFully();
+
             if (keys != null && keys.rKey.wasPressedThisFrame && world != null)
             {
                 world.ResetRun();
@@ -89,7 +92,7 @@ namespace SinkLab
                         water.Pressure = Mathf.Clamp01(water.Pressure + Mathf.Sign(scroll) * 0.1f);
                     if (mouse.rightButton.wasPressedThisFrame)
                         water.WideSpray = !water.WideSpray;
-                    bool canSpray = !_mustReleaseFire && (world == null || !world.IsOverflowed);
+                    bool canSpray = !_mustReleaseFire && (world == null || (!world.IsDrainSealed && !world.IsOverflowed));
                     water.SetSpraying(mouse.leftButton.isPressed && canSpray);
                 }
             }
@@ -116,7 +119,7 @@ namespace SinkLab
         public void SetView(float yaw, float pitch)
         {
             _yaw = Mathf.Repeat(yaw + 180f, 360f) - 180f;
-            _pitch = Mathf.Clamp(pitch, 5f, 85f);
+            _pitch = Mathf.Clamp(pitch, -25f, 85f);
             transform.rotation = Quaternion.Euler(0f, _yaw, 0f);
             if (viewCamera != null) viewCamera.transform.localRotation = Quaternion.Euler(_pitch, 0f, 0f);
         }

@@ -39,11 +39,12 @@ namespace SinkLab
         }
 
         public bool IsOverflowed => basin != null && basin.IsOverflowed;
+        public bool IsDrainSealed => drain != null && drain.IsSealed;
 
         // Missing required parts or deleted objective references must not award completion.
         public bool IsComplete => player != null && water != null && drain != null &&
             foods != null && foods.Length > 0 && stains != null && stains.Length > 0 &&
-            FoodRemaining == 0 && StainsRemaining == 0 && !IsOverflowed;
+            FoodRemaining == 0 && StainsRemaining == 0;
 
         void Awake()
         {

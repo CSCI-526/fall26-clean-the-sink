@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.Rendering;
 
@@ -10,7 +11,8 @@ namespace SinkLab
     public sealed class BasinWater : MonoBehaviour
     {
         public const float FloorY = 0.80f;
-        public const float OverflowY = 1.195f;
+        public const float OverflowY = 1.035f;
+        const float FormerDepth = 1.195f - FloorY;
 
         public WaterJet water;
         public Drain drain;
@@ -25,6 +27,8 @@ namespace SinkLab
         Material volumeMaterial;
         Transform vortex;
         static readonly int BaseColor = Shader.PropertyToID("_BaseColor");
+        static PhysicsMaterial wetSlide;
+        readonly Dictionary<Collider, PhysicsMaterial> dryMaterials = new Dictionary<Collider, PhysicsMaterial>();
 
         public void Configure(SinkWorld owner)
         {
@@ -46,7 +50,6 @@ namespace SinkLab
 
         void FixedUpdate()
         {
-            if (IsOverflowed) return;
             float dt = Time.fixedDeltaTime;
             if (dt <= 0f) return;
 
@@ -54,7 +57,7 @@ namespace SinkLab
             if (water != null && water.IsSpraying)
             {
                 float pressure = water.Pressure * water.Pressure;
-                inflow = Mathf.Lerp(0.02f, 0.22f, pressure) / 3f;
+                inflow = Mathf.Lerp(0.02f, 0.22f, pressure) / 2f;
                 if (water.WideSpray) inflow *= 1.25f;
             }
 
@@ -69,21 +72,24 @@ namespace SinkLab
             // so the level stays down until the drain has actually shrunk.
             float head = Mathf.Lerp(0.16f, 0.40f, NormalizedLevel);
             float outflow = opening * head;
-            NormalizedLevel = Mathf.Clamp01(NormalizedLevel + (inflow - outflow) * dt);
-            if (NormalizedLevel >= 1f)
-            {
-                NormalizedLevel = 1f;
-                IsOverflowed = true;
-                if (water != null) water.SetSpraying(false);
-            }
+            float levelBefore = NormalizedLevel;
+            // A shallower bowl holds less, so the same stream fills and drains it sooner.
+            float volume = FormerDepth / Mathf.Max(0.05f, OverflowY - FloorY);
+            NormalizedLevel = Mathf.Clamp01(NormalizedLevel + (inflow - outflow) * volume * dt);
+            bool rising = NormalizedLevel > levelBefore + 0.00001f && NormalizedLevel >= 0.08f;
+            if (NormalizedLevel >= 1f) NormalizedLevel = 1f;
+            bool wasOverflowed = IsOverflowed;
+            IsOverflowed = NormalizedLevel >= 1f;
+            if (IsOverflowed && !wasOverflowed && water != null) water.SetSpraying(false);
 
             UpdateVolume();
-            ApplyBuoyancy();
+            ApplyBuoyancy(rising);
+            ApplyWetFriction();
             PullIntoDrain();
             UpdateVortex();
         }
 
-        void ApplyBuoyancy()
+        void ApplyBuoyancy(bool rising)
         {
             if (NormalizedLevel <= 0.001f) return;
             float surface = SurfaceY;
@@ -106,51 +112,144 @@ namespace SinkLab
                     body.AddForce(-body.linearVelocity * submerged * body.mass * 1.6f, ForceMode.Force);
                     body.AddForce(Vector3.down * body.linearVelocity.y * submerged * body.mass * 2.2f, ForceMode.Force);
                 }
+                // The rise itself is the shuffle. Once the level stops climbing, scraps settle where they drifted.
+                if (rising && submerged > 0.35f)
+                    body.AddForce(ShuffleCurrent(food, body.worldCenterOfMass) * submerged * body.mass, ForceMode.Force);
+            }
+        }
+
+        static readonly Vector2[] CornerCenters =
+        {
+            new Vector2(-1.18f, -0.73f),
+            new Vector2(1.18f, -0.73f),
+            new Vector2(1.18f, 0.73f),
+            new Vector2(-1.18f, 0.73f)
+        };
+
+        Vector3 ShuffleCurrent(FoodScrap food, Vector3 worldPoint)
+        {
+            Transform sink = world != null && world.sink != null ? world.sink.transform : null;
+            if (sink == null) return Vector3.zero;
+            Vector3 local = sink.InverseTransformPoint(worldPoint);
+            Vector3 fromCenter = new Vector3(local.x, 0f, local.z);
+            Vector3 swirl = new Vector3(fromCenter.z, 0f, -fromCenter.x);
+            if (swirl.sqrMagnitude < 0.04f) swirl = Vector3.right;
+            else swirl.Normalize();
+
+            float phase = (Mathf.Abs(food.GetInstanceID()) % 997) * 0.013f;
+            float turn = Time.time * 0.55f + phase;
+            Vector3 personal = new Vector3(Mathf.Cos(turn), 0f, Mathf.Sin(turn));
+            Vector3 push = swirl * 0.65f + personal * 0.7f;
+
+            float best = 0.52f;
+            Vector2 corner = default;
+            bool inCorner = false;
+            for (int i = 0; i < CornerCenters.Length; i++)
+            {
+                float distance = Vector2.Distance(new Vector2(local.x, local.z), CornerCenters[i]);
+                if (distance >= best) continue;
+                best = distance;
+                corner = CornerCenters[i];
+                inCorner = true;
+            }
+            if (inCorner)
+            {
+                Vector3 exit = new Vector3(-corner.x, 0f, -corner.y);
+                if (exit.sqrMagnitude > 0.001f) push += exit.normalized * 1.35f;
+            }
+            if (Mathf.Abs(local.x) > 1.05f) push.x -= Mathf.Sign(local.x) * 0.55f;
+            if (Mathf.Abs(local.z) > 0.7f) push.z -= Mathf.Sign(local.z) * 0.55f;
+            if (push.sqrMagnitude < 0.0001f) return Vector3.zero;
+            return sink.TransformDirection(push.normalized * 1.05f);
+        }
+
+        void ApplyWetFriction()
+        {
+            if (wetSlide == null)
+            {
+                wetSlide = new PhysicsMaterial("Standing water")
+                {
+                    dynamicFriction = 0.02f,
+                    staticFriction = 0.015f,
+                    frictionCombine = PhysicsMaterialCombine.Minimum,
+                    bounceCombine = PhysicsMaterialCombine.Minimum,
+                    bounciness = 0f
+                };
+                wetSlide.hideFlags = HideFlags.DontSave;
+            }
+            float surface = SurfaceY;
+            bool slippery = NormalizedLevel >= 0.05f;
+            foreach (FoodScrap food in FoodScrap.Active)
+            {
+                if (food == null || food.IsDrained) continue;
+                if (world != null && food.GetComponentInParent<SinkWorld>() != world) continue;
+                Collider collider = food.GetComponent<Collider>();
+                if (collider == null) continue;
+                bool wet = false;
+                if (slippery)
+                {
+                    Bounds bounds = collider.bounds;
+                    float height = Mathf.Max(0.02f, bounds.size.y);
+                    wet = (surface - bounds.min.y) / height > 0.12f;
+                }
+                if (wet)
+                {
+                    if (!dryMaterials.ContainsKey(collider))
+                        dryMaterials.Add(collider, collider.sharedMaterial);
+                    collider.sharedMaterial = wetSlide;
+                }
+                else if (dryMaterials.TryGetValue(collider, out PhysicsMaterial dry))
+                {
+                    collider.sharedMaterial = dry;
+                    dryMaterials.Remove(collider);
+                }
             }
         }
 
         float BuoyancyOverDrain(Vector3 worldPoint)
         {
-            if (drain == null) return 1f;
+            if (drain == null || !drain.IsOpen || NormalizedLevel < 0.08f) return 1f;
             Vector3 mouth = drain.transform.position;
             Vector3 flat = worldPoint - mouth;
             flat.y = 0f;
-            float reach = Mathf.Max(0.05f, drain.radius) * 1.15f;
+            float hole = Mathf.Max(0.05f, drain.radius);
             float dist = flat.magnitude;
-            if (dist >= reach) return 1f;
-            return Mathf.Lerp(0.04f, 1f, dist / reach);
+            if (dist >= hole) return 1f;
+            return Mathf.Lerp(0.55f, 1f, dist / hole);
         }
 
         void PullIntoDrain()
         {
-            if (drain == null || !drain.IsOpen) return;
+            // A dry opening does not pull. The swirl is standing water moving toward the mouth.
+            if (drain == null || !drain.IsOpen || drain.IsSealed || NormalizedLevel < 0.08f) return;
             Vector3 mouth = drain.transform.position;
+            float surface = SurfaceY;
             float hole = Mathf.Max(0.05f, drain.radius);
-            float reach = hole * 3.2f;
-            float wet = Mathf.Lerp(0.7f, 1.45f, NormalizedLevel);
+            float reach = hole * Mathf.Lerp(1.2f, 1.65f, NormalizedLevel);
+            float strength = Mathf.Lerp(0.25f, 1f, NormalizedLevel);
             foreach (FoodScrap food in FoodScrap.Active)
             {
                 if (food == null || food.IsDrained || food.Body == null || food.Body.isKinematic) continue;
                 if (world != null && food.GetComponentInParent<SinkWorld>() != world) continue;
+                Collider collider = food.GetComponent<Collider>();
+                if (collider == null || !collider.enabled) continue;
+                Bounds bounds = collider.bounds;
+                float height = Mathf.Max(0.02f, bounds.size.y);
+                float submerged = Mathf.Clamp01((surface - bounds.min.y) / height);
+                if (submerged < 0.2f) continue;
                 Vector3 pos = food.Body.worldCenterOfMass;
-                float height = pos.y - mouth.y;
-                if (height < -0.04f || height > 0.4f) continue;
+                if (pos.y < mouth.y - 0.04f) continue;
                 Vector3 flat = pos - mouth;
                 flat.y = 0f;
                 float dist = flat.magnitude;
-                if (dist > reach || dist < 0.0001f)
-                {
-                    if (dist <= hole)
-                        food.Body.AddForce(Vector3.down * 24f * wet * food.Body.mass, ForceMode.Force);
-                    continue;
-                }
+                if (dist > reach || dist < 0.0001f) continue;
                 float closeness = 1f - dist / reach;
                 Vector3 inward = -flat / dist;
                 Vector3 swirl = Vector3.Cross(Vector3.up, inward);
-                float swirlFade = Mathf.Clamp01((dist - hole * 0.45f) / hole);
-                float down = dist < hole * 1.25f ? Mathf.Lerp(34f, 12f, Mathf.Clamp01(dist / hole)) : 4f * closeness;
-                Vector3 accel = inward * Mathf.Lerp(14f, 28f, closeness) + swirl * (4f * closeness * swirlFade) + Vector3.down * down;
-                food.Body.AddForce(accel * wet * food.Body.mass, ForceMode.Force);
+                float swirlFade = Mathf.Clamp01((dist - hole * 0.35f) / hole);
+                float down = dist < hole ? 2.5f * closeness : 0f;
+                Vector3 accel = inward * (3.2f * closeness) + swirl * (1.4f * closeness * swirlFade) + Vector3.down * down;
+                food.Body.AddForce(accel * strength * submerged * food.Body.mass, ForceMode.Force);
             }
         }
 
