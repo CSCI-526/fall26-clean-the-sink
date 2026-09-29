@@ -1,6 +1,6 @@
 # Paired Prototype Descriptive Document
 
-## Project Name: Sink Havoc: Choked Drain & Overflow
+## Project Name: Clean it up!
 
 ### Team Members
 
