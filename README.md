@@ -1,4 +1,4 @@
-# Clean the Sink
+# Clean it up!
 
 A small first-person Unity prototype about getting stubborn food down a kitchen sink using only water.
 
