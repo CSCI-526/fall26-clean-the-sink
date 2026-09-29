@@ -1,12 +1,14 @@
 # Paired Prototype Descriptive Document
 
-## Project Name: Sink Havoc: Choked Drain & Overflow
+## Project Name: Clean It Up!
 
 ### Team Members
 
-- **Name**:  | **Email**:  | **GitHub Username**: 
-- **Name**: [Teammate Name] | **Email**: [Teammate Email] | **GitHub Username**: [Teammate GitHub]
+- **Name**: Tommy Hu | **Email**: tommyhu@usc.edu | **GitHub Username**: firemanwolf
+- **Name**: Zhan Li | **Email**: lizhan@usc.edu | **GitHub Username**: ZhanLiQAQ
+- **Name**: Khushi Mehta  | **Email**: khushipr@usc.edu | **GitHub Username**: khushim14
 
+  
 ---
 
 ### Logline (Genre + Dual Twists + Fail State)
@@ -95,8 +97,9 @@
 ### Deliverable Links
 
 - **GitHub Repository**: `https://github.com/Firemanwolf/clean-the-sink`
-- **WebGL Playable Build**: `https://[Your-GitHub-Username].github.io/paired-prototype-sink-havoc/`
-- **Gameplay Video**: `[Insert public link to video demo]`
+- **WebGL Playable Build**: `https://csci-526.github.io/fall26-clean-the-sink/`
+- **Gameplay Video**: `https://drive.google.com/file/d/1C5kJM8ISHa9yNZcK9k6KEhdIYXIM_7m7/view?usp=sharing
+`
 
 ---
 
@@ -104,13 +107,22 @@
 
 ### Individual Contributions
 
+Tommy Hu:
+I proposed the original game concept and drafted the initial game design and core mechanics. I independently developed the first prototype and presented it to the team for feedback and further development.
+
+Zhan Li: I developed the first prototype into a playable version of the two twists. I implemented the shrinking drain, the overflow and sealed-drain losses, spray pressure, and plugging the hole so food floats into a new layout, then documented how those mechanics play.
+
+Khushi: I worked on the ideation of the drain-plugging twist — closing the drain to raise the water level and change how the sink behaves — and helped shape how that mechanic fits into the overall game design. Alongside that, I contributed to building out the prototype and put together the project's documentation.
+
+
 ---
 
 
 
 ### Diagram / Sketch Concept
 
-*(Include in your final submission document)*
+<img width="1037" height="569" alt="Screenshot 2026-09-28 at 19 15 13" src="https://github.com/user-attachments/assets/8fe39b8d-2111-453d-b763-2806db601fa5" />
+
 
 - **Top/Isometric View**: Show the circular drain shrinking from its starting radius to a sealed minimum. Mark that seal, with food or stains still left, as a loss. Show a plugged hole holding water so scraps drift into a new layout.
 - **Side Cutaway View**:
